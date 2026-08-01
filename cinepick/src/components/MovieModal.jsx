@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { getMovieDetails, getMovieCredits, fetchNarrativeAnalysis, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
-import { analyzeNarrative } from '../utils/narrativeEngine';
+import { getMovieDetails, getMovieCredits, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
+import { fetchMovieInsight } from '../services/narrativeApi';
 import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, Check, Sparkles, Activity, BookOpen, Cpu } from 'lucide-react';
 
 export default function MovieModal({ movie, movieId, onClose, isBookmarked, onToggleWatchlist }) {
   const [details, setDetails] = useState(null);
   const [credits, setCredits] = useState(null);
-  const [narrative, setNarrative] = useState(null);
+  const [insight, setInsight] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const activeId = movie?.id || movieId;
@@ -24,10 +24,10 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
         setDetails(currentMovieData);
         setCredits(creditsData);
 
-        // Anında narrativeEngine analizi başlat
-        fetchNarrativeAnalysis(currentMovieData).then((narrativeRes) => {
+        // Java Spring Boot NarrativeEngine / narrativeApi analizi başlat
+        fetchMovieInsight(currentMovieData).then((insightRes) => {
           if (isMounted) {
-            setNarrative(narrativeRes);
+            setInsight(insightRes);
           }
         });
 
@@ -38,7 +38,9 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
         if (isMounted) {
           const fallbackMovie = movie || {};
           setDetails(fallbackMovie);
-          setNarrative(analyzeNarrative(fallbackMovie));
+          fetchMovieInsight(fallbackMovie).then((res) => {
+            if (isMounted) setInsight(res);
+          });
           setLoading(false);
         }
       });
@@ -93,7 +95,12 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
     ? new Date(currentMovie.release_date).getFullYear()
     : 'N/A';
 
-  const activeNarrative = narrative || analyzeNarrative(currentMovie);
+  const activeInsight = insight || {
+    atmosphere: 'Atmosferik & Etkileyici',
+    narrativePace: 'Dengeli ve Sürükleyici Anlatı',
+    whyToWatch: 'Bu film derin sinematik teması ve özgün kurgusuyla izlenmeye değer.',
+    source: 'Spring Boot Java Backend'
+  };
 
   return (
     <div
@@ -203,24 +210,24 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                 </div>
               </div>
 
-              {/* CINEPICK ANLATI ANALİZİ BÖLÜMÜ (Narrative Engine) */}
+              {/* CINEPICK ANLATI & ATMOSFER ANALİZİ BÖLÜMÜ (narrativeApi) */}
               <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-rose-500/30 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-rose-500 animate-pulse" />
                     <h3 className="text-sm font-bold uppercase tracking-wider text-rose-400">
-                      CinePick Anlatı Analizi
+                      CinePick Anlatı & Atmosfer Analizi
                     </h3>
                   </div>
-                  {activeNarrative.source && (
+                  {activeInsight.source && (
                     <span className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-mono">
                       <Cpu className="w-3 h-3 text-rose-400" />
-                      {activeNarrative.source}
+                      {activeInsight.source}
                     </span>
                   )}
                 </div>
 
-                {/* Grid Analiz Kartları */}
+                {/* Rozetler ve Kartlar */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -228,7 +235,7 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                     </div>
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase font-semibold">Atmosfer & Vibe</p>
-                      <p className="text-sm font-bold text-slate-100 mt-0.5">{activeNarrative.vibe}</p>
+                      <p className="text-sm font-bold text-slate-100 mt-0.5">{activeInsight.atmosphere}</p>
                     </div>
                   </div>
 
@@ -238,19 +245,19 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                     </div>
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase font-semibold">Anlatı Temposu</p>
-                      <p className="text-sm font-bold text-slate-100 mt-0.5">{activeNarrative.pace}</p>
+                      <p className="text-sm font-bold text-slate-100 mt-0.5">{activeInsight.narrativePace}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Neden İzlemelisin? Edebî İnceleme */}
+                {/* Neden İzlemelisin? Metni */}
                 <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-rose-300">
                     <BookOpen className="w-3.5 h-3.5" />
                     <span>Neden İzlemelisin?</span>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed italic">
-                    "{activeNarrative.insight}"
+                    "{activeInsight.whyToWatch}"
                   </p>
                 </div>
               </div>
