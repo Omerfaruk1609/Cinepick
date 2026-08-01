@@ -129,23 +129,29 @@ export const getMovieCredits = async (movieId) => {
   };
 };
 
-// Narrative Engine (Spring Boot API + JS Fallback)
+// Narrative Engine (Spring Boot API + JS Fallback Entegrasyonu)
 export const fetchNarrativeAnalysis = async (movieData) => {
   const payload = {
+    title: movieData.title || '',
     overview: movieData.overview || '',
+    genres: Array.isArray(movieData.genres) ? movieData.genres.map(g => typeof g === 'string' ? g : g.name) : [],
     runtime: movieData.runtime || 120,
-    releaseYear: movieData.release_date ? new Date(movieData.release_date).getFullYear() : 2020,
     voteAverage: movieData.vote_average || 8.0,
-    genres: Array.isArray(movieData.genres) ? movieData.genres.map(g => typeof g === 'string' ? g : g.name) : []
+    releaseYear: movieData.release_date ? new Date(movieData.release_date).getFullYear() : 2020,
   };
 
   try {
     const response = await axios.post(SPRING_BOOT_URL, payload, { timeout: 2000 });
-    if (response.data && response.data.vibe) {
-      return { ...response.data, source: 'Spring Boot Java Backend' };
+    if (response.data && response.data.atmosphere) {
+      return {
+        vibe: response.data.atmosphere,
+        pace: response.data.narrativePace,
+        insight: response.data.whyToWatch,
+        source: 'Spring Boot Java Backend',
+      };
     }
   } catch (err) {
-    // Spring Boot sunucusu kapalıysa veya yanıt vermezse Pure JS Motoru devreye girer
+    // Spring Boot kapalı ise istemci tarafı Pure JS Motoru devreye girer
   }
 
   const jsResult = analyzeNarrativeJS(movieData);
