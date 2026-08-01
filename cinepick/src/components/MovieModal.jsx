@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { getMovieDetails, getMovieCredits, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
-import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, Check } from 'lucide-react';
+import { getMovieDetails, getMovieCredits, fetchNarrativeAnalysis, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
+import { analyzeNarrative } from '../utils/narrativeEngine';
+import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, Check, Sparkles, Activity, BookOpen, Cpu } from 'lucide-react';
 
 export default function MovieModal({ movie, movieId, onClose, isBookmarked, onToggleWatchlist }) {
   const [details, setDetails] = useState(null);
   const [credits, setCredits] = useState(null);
+  const [narrative, setNarrative] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const activeId = movie?.id || movieId;
@@ -18,14 +20,25 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
     Promise.all([getMovieDetails(activeId), getMovieCredits(activeId)])
       .then(([detailsData, creditsData]) => {
         if (!isMounted) return;
-        setDetails(detailsData || movie);
+        const currentMovieData = detailsData || movie;
+        setDetails(currentMovieData);
         setCredits(creditsData);
+
+        // Anında narrativeEngine analizi başlat
+        fetchNarrativeAnalysis(currentMovieData).then((narrativeRes) => {
+          if (isMounted) {
+            setNarrative(narrativeRes);
+          }
+        });
+
         setLoading(false);
       })
       .catch((err) => {
         console.error('Modal detay hatası:', err);
         if (isMounted) {
-          setDetails(movie);
+          const fallbackMovie = movie || {};
+          setDetails(fallbackMovie);
+          setNarrative(analyzeNarrative(fallbackMovie));
           setLoading(false);
         }
       });
@@ -80,6 +93,8 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
     ? new Date(currentMovie.release_date).getFullYear()
     : 'N/A';
 
+  const activeNarrative = narrative || analyzeNarrative(currentMovie);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 bg-slate-950/80 backdrop-blur-md transition-all duration-300 animate-in fade-in"
@@ -123,7 +138,7 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-transparent to-transparent" />
 
-              {/* Başlık, İzleme Listesi Butonu (Backdrop üzeri) */}
+              {/* Başlık & İzleme Listesi Butonu */}
               <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between gap-4">
                 <div>
                   <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-wide drop-shadow-md">
@@ -136,7 +151,6 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   )}
                 </div>
 
-                {/* İzleme Listesine Ekle / Çıkar Butonu */}
                 {onToggleWatchlist && (
                   <button
                     onClick={() => onToggleWatchlist(currentMovie)}
@@ -166,19 +180,16 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
             <div className="p-6 sm:p-8 space-y-6">
               {/* Meta Bilgi Çubuğu */}
               <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm border-b border-slate-800 pb-4">
-                {/* Puan */}
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
                   <Star className="w-4 h-4 fill-amber-400" />
                   <span>{currentMovie.vote_average ? Number(currentMovie.vote_average).toFixed(1) : 'N/A'}</span>
                 </div>
 
-                {/* Çıkış Yılı */}
                 <div className="flex items-center gap-1.5 text-slate-300">
                   <Calendar className="w-4 h-4 text-rose-500" />
                   <span>{releaseYear}</span>
                 </div>
 
-                {/* Süre */}
                 {currentMovie.runtime > 0 && (
                   <div className="flex items-center gap-1.5 text-slate-300">
                     <Clock className="w-4 h-4 text-rose-500" />
@@ -186,10 +197,61 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   </div>
                 )}
 
-                {/* Yönetmen */}
                 <div className="flex items-center gap-1.5 text-slate-300">
                   <Clapperboard className="w-4 h-4 text-rose-500" />
                   <span>Yönetmen: <strong className="text-white font-medium">{director}</strong></span>
+                </div>
+              </div>
+
+              {/* CINEPICK ANLATI ANALİZİ BÖLÜMÜ (Narrative Engine) */}
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-rose-500/30 shadow-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-rose-500 animate-pulse" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-rose-400">
+                      CinePick Anlatı Analizi
+                    </h3>
+                  </div>
+                  {activeNarrative.source && (
+                    <span className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-mono">
+                      <Cpu className="w-3 h-3 text-rose-400" />
+                      {activeNarrative.source}
+                    </span>
+                  )}
+                </div>
+
+                {/* Grid Analiz Kartları */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Atmosfer & Vibe</p>
+                      <p className="text-sm font-bold text-slate-100 mt-0.5">{activeNarrative.vibe}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Anlatı Temposu</p>
+                      <p className="text-sm font-bold text-slate-100 mt-0.5">{activeNarrative.pace}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Neden İzlemelisin? Edebî İnceleme */}
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-rose-300">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Neden İzlemelisin?</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed italic">
+                    "{activeNarrative.insight}"
+                  </p>
                 </div>
               </div>
 
@@ -201,7 +263,7 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                       key={genre.id || genre.name}
                       className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-800 border border-slate-700 text-rose-300"
                     >
-                      {genre.name}
+                      {typeof genre === 'string' ? genre : genre.name}
                     </span>
                   ))}
                 </div>
@@ -209,7 +271,6 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
 
               {/* Afiş + Özet Bölümü */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-                {/* Sol Afiş (Masaüstünde) */}
                 {posterUrl && (
                   <div className="hidden md:block md:col-span-1 rounded-xl overflow-hidden border border-slate-800 shadow-xl aspect-[2/3]">
                     <img
@@ -220,7 +281,6 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   </div>
                 )}
 
-                {/* Sağ Özet & Detaylar */}
                 <div className={`space-y-4 ${posterUrl ? 'md:col-span-3' : 'md:col-span-4'}`}>
                   <div>
                     <h3 className="text-sm font-bold uppercase tracking-wider text-rose-500 mb-2">

@@ -1,9 +1,11 @@
 import axios from 'axios';
+import { analyzeNarrative as analyzeNarrativeJS } from '../utils/narrativeEngine';
 
 export const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 export const BACKDROP_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w1280';
 
 const API_KEY_ENV = import.meta.env.VITE_API_KEY || import.meta.env.VITE_TMDB_API_KEY || '';
+const SPRING_BOOT_URL = 'http://localhost:8080/api/narrative/analyze';
 
 const extractApiKey = (raw) => {
   if (!raw) return '';
@@ -90,7 +92,6 @@ export const getMovieDetails = async (movieId) => {
     }
   }
 
-  // Fallback detail
   return {
     id: movieId,
     title: 'Örnek Sinema Eseri',
@@ -115,7 +116,6 @@ export const getMovieCredits = async (movieId) => {
     }
   }
 
-  // Fallback credits
   return {
     cast: [
       { id: 1, name: 'Christian Bale', character: 'Ana Karakter', profile_path: null },
@@ -127,6 +127,29 @@ export const getMovieCredits = async (movieId) => {
       { id: 10, name: 'Christopher Nolan', job: 'Director' }
     ]
   };
+};
+
+// Narrative Engine (Spring Boot API + JS Fallback)
+export const fetchNarrativeAnalysis = async (movieData) => {
+  const payload = {
+    overview: movieData.overview || '',
+    runtime: movieData.runtime || 120,
+    releaseYear: movieData.release_date ? new Date(movieData.release_date).getFullYear() : 2020,
+    voteAverage: movieData.vote_average || 8.0,
+    genres: Array.isArray(movieData.genres) ? movieData.genres.map(g => typeof g === 'string' ? g : g.name) : []
+  };
+
+  try {
+    const response = await axios.post(SPRING_BOOT_URL, payload, { timeout: 2000 });
+    if (response.data && response.data.vibe) {
+      return { ...response.data, source: 'Spring Boot Java Backend' };
+    }
+  } catch (err) {
+    // Spring Boot sunucusu kapalıysa veya yanıt vermezse Pure JS Motoru devreye girer
+  }
+
+  const jsResult = analyzeNarrativeJS(movieData);
+  return { ...jsResult, source: 'Pure JavaScript Engine' };
 };
 
 // Arama Yap
