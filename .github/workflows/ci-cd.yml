@@ -40,10 +40,18 @@ jobs:
       - name: Build Backend Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: false
           tags: cinepick-backend:latest
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./cinepick
+          file: ./cinepick/Dockerfile
+          push: false
+          tags: cinepick-frontend:latest
 
       - name: Test Docker Compose Orchestration
         run: |
