@@ -1,0 +1,21 @@
+export const GENRES = [
+  { id: 0, name: 'Tüm Türler', emoji: '🎬' },
+  { id: 28, name: 'Aksiyon', emoji: '💥' },
+  { id: 12, name: 'Macera', emoji: '🗺️' },
+  { id: 16, name: 'Animasyon', emoji: '🎨' },
+  { id: 35, name: 'Komedi', emoji: '😂' },
+  { id: 80, name: 'Suç', emoji: '🕵️' },
+  { id: 99, name: 'Belgesel', emoji: '📹' },
+  { id: 18, name: 'Dram', emoji: '🎭' },
+  { id: 10751, name: 'Aile', emoji: '👨‍👩‍👧' },
+  { id: 14, name: 'Fantastik', emoji: '🧙‍♂️' },
+  { id: 36, name: 'Tarih', emoji: '📜' },
+  { id: 27, name: 'Korku', emoji: '👻' },
+  { id: 10402, name: 'Müzik', emoji: '🎵' },
+  { id: 9648, name: 'Gizem', emoji: '🔍' },
+  { id: 10749, name: 'Romantik', emoji: '💖' },
+  { id: 878, name: 'Bilim-Kurgu', emoji: '🚀' },
+  { id: 53, name: 'Gerilim', emoji: '⚡' },
+  { id: 10752, name: 'Savaş', emoji: '🪖' },
+  { id: 37, name: 'Vahşi Batı', emoji: '🤠' }
+];
