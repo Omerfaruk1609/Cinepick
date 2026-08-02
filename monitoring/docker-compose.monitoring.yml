@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cinepick_prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--scrape.interval=15s'
+    ports:
+      - "9090:9090"
+    networks:
+      - cinepick_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cinepick_grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - cinepick_network
+    depends_on:
+      - prometheus
+
+networks:
+  cinepick_network:
+    external: true
+    name: cinepick_network
+
+volumes:
+  prometheus_data:
+  grafana_data:

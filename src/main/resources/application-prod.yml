@@ -1,0 +1,33 @@
+spring:
+  profiles:
+    active: prod
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: cinepick-backend
+      environment: production
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    proje.cinepick: INFO
+    org.springframework.web: WARN
+    org.hibernate: ERROR
