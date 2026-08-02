@@ -1,5 +1,6 @@
 package proje.cinepick.api.controllers;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proje.cinepick.buisness.NarrativeEngineService;
 import proje.cinepick.dto.MovieAnalysisRequest;
@@ -17,7 +18,8 @@ public class NarrativeController {
     }
 
     @PostMapping("/analyze")
-    public MovieAnalysisResponse analyze(@RequestBody MovieAnalysisRequest request) {
-        return narrativeEngineService.analyzeMovie(request);
+    public ResponseEntity<MovieAnalysisResponse> analyze(@RequestBody(required = false) MovieAnalysisRequest request) {
+        MovieAnalysisResponse response = narrativeEngineService.analyzeMovie(request != null ? request : new MovieAnalysisRequest());
+        return ResponseEntity.ok(response);
     }
 }

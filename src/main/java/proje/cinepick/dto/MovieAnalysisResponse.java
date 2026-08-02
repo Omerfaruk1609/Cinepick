@@ -1,39 +1,19 @@
 package proje.cinepick.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class MovieAnalysisResponse {
     private String atmosphere;
     private String narrativePace;
+    private List<String> keyThemes;
     private String whyToWatch;
-
-    public MovieAnalysisResponse() {}
-
-    public MovieAnalysisResponse(String atmosphere, String narrativePace, String whyToWatch) {
-        this.atmosphere = atmosphere;
-        this.narrativePace = narrativePace;
-        this.whyToWatch = whyToWatch;
-    }
-
-    public String getAtmosphere() {
-        return atmosphere;
-    }
-
-    public void setAtmosphere(String atmosphere) {
-        this.atmosphere = atmosphere;
-    }
-
-    public String getNarrativePace() {
-        return narrativePace;
-    }
-
-    public void setNarrativePace(String narrativePace) {
-        this.narrativePace = narrativePace;
-    }
-
-    public String getWhyToWatch() {
-        return whyToWatch;
-    }
-
-    public void setWhyToWatch(String whyToWatch) {
-        this.whyToWatch = whyToWatch;
-    }
 }

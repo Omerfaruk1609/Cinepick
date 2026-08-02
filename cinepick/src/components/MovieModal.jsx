@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getMovieDetails, getMovieCredits, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
 import { fetchMovieInsight } from '../services/narrativeApi';
-import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, Check, Sparkles, Activity, BookOpen, Cpu } from 'lucide-react';
+import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, Check, Sparkles, Activity, BookOpen, Cpu, Tag } from 'lucide-react';
 
 export default function MovieModal({ movie, movieId, onClose, isBookmarked, onToggleWatchlist }) {
   const [details, setDetails] = useState(null);
@@ -98,6 +98,7 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
   const activeInsight = insight || {
     atmosphere: 'Atmosferik & Etkileyici',
     narrativePace: 'Dengeli ve Sürükleyici Anlatı',
+    keyThemes: ['Varoluşçuluk', 'İnsan Doğası'],
     whyToWatch: 'Bu film derin sinematik teması ve özgün kurgusuyla izlenmeye değer.',
     source: 'Spring Boot Java Backend'
   };
@@ -249,6 +250,24 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                     </div>
                   </div>
                 </div>
+
+                {/* Ana Temalar (Key Themes) Rozetleri */}
+                {activeInsight.keyThemes && activeInsight.keyThemes.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="flex items-center gap-1 text-xs font-semibold text-slate-400 mr-1">
+                      <Tag className="w-3.5 h-3.5 text-rose-400" />
+                      Ana Temalar:
+                    </span>
+                    {activeInsight.keyThemes.map((theme, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300"
+                      >
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Neden İzlemelisin? Metni */}
                 <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">

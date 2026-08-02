@@ -5,7 +5,7 @@ const API_BASE_URL = 'http://localhost:8080/api/narrative/analyze';
 
 /**
  * Java Spring Boot Backend'deki /api/narrative/analyze POST endpoint'ine istek atarak
- * filmin anlatı ve atmosfer analizini (atmosphere, narrativePace, whyToWatch) çeker.
+ * filmin anlatı ve atmosfer analizini (atmosphere, narrativePace, keyThemes, whyToWatch) çeker.
  * 
  * Eğer Java backend sunucusu kapalıysa veya yanıt vermezse,
  * kesintisiz deneyim için istemci tarafındaki pure JavaScript narrativeEngine devreye girer.
@@ -30,6 +30,7 @@ export const fetchMovieInsight = async (movieData) => {
       return {
         atmosphere: response.data.atmosphere,
         narrativePace: response.data.narrativePace,
+        keyThemes: response.data.keyThemes || ['Varoluşçuluk', 'İnsan Doğası'],
         whyToWatch: response.data.whyToWatch,
         source: 'Spring Boot Java Backend',
       };
@@ -43,6 +44,7 @@ export const fetchMovieInsight = async (movieData) => {
   return {
     atmosphere: fallback.vibe,
     narrativePace: fallback.pace,
+    keyThemes: ['Varoluşçuluk', 'Zaman Algısı', 'İnsan Doğası'],
     whyToWatch: fallback.insight,
     source: 'Pure JavaScript Engine',
   };
