@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getMovieDetails, getMovieCredits, getMovieVideos, formatRuntime, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
 import { fetchMovieInsight } from '../services/narrativeApi';
-import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, CheckCircle2, Sparkles, Activity, BookOpen, Cpu, Tag, Play, FileText, Globe } from 'lucide-react';
+import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, CheckCircle2, Sparkles, Activity, BookOpen, Cpu, Tag, Play, FileText, Globe, DollarSign, Award } from 'lucide-react';
 
 export default function MovieModal({
   movie,
@@ -11,12 +11,17 @@ export default function MovieModal({
   isWatched,
   onToggleWatchlist,
   onToggleWatched,
+  userRating,
+  onRateMovie,
+  isAuthenticated,
+  onRequireAuth,
 }) {
   const [details, setDetails] = useState(null);
   const [credits, setCredits] = useState(null);
   const [insight, setInsight] = useState(null);
   const [trailerKey, setTrailerKey] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hoverRating, setHoverRating] = useState(0);
 
   const activeId = movie?.id || movieId;
 
@@ -38,7 +43,6 @@ export default function MovieModal({
         setCredits(creditsData);
         setTrailerKey(videoKey);
 
-        // Java Spring Boot NarrativeEngine / narrativeApi analizi başlat
         fetchMovieInsight(currentMovieData).then((insightRes) => {
           if (isMounted) {
             setInsight(insightRes);
@@ -64,7 +68,6 @@ export default function MovieModal({
     };
   }, [activeId, movie]);
 
-  // ESC tuşu ile kapatma
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -81,7 +84,6 @@ export default function MovieModal({
   const inWatchlist = isInWatchlist ? isInWatchlist(currentMovie.id) : false;
   const inWatched = isWatched ? isWatched(currentMovie.id) : false;
 
-  // Arka plan resmi
   const backdropUrl = currentMovie.backdrop_path
     ? currentMovie.backdrop_path.startsWith('http')
       ? currentMovie.backdrop_path
@@ -92,27 +94,36 @@ export default function MovieModal({
       : `${IMAGE_BASE_URL}${currentMovie.poster_path}`
     : null;
 
-  // Afiş resmi
   const posterUrl = currentMovie.poster_path
     ? currentMovie.poster_path.startsWith('http')
       ? currentMovie.poster_path
       : `${IMAGE_BASE_URL}${currentMovie.poster_path}`
     : null;
 
-  // Yönetmen ve Senarist bulma
   const director = credits?.crew?.find(c => c.job === 'Director')?.name || 'Bilinmiyor';
   const writer = credits?.crew?.find(c => c.job === 'Writer' || c.job === 'Screenplay' || c.job === 'Story')?.name || 'Bilinmiyor';
+  const topCast = credits?.slice ? credits.slice(0, 5) : credits?.cast?.slice(0, 5) || [];
 
-  // Oyuncular (İlk 5 kişi)
-  const topCast = credits?.cast?.slice(0, 5) || [];
-
-  // Çıkış yılı
   const releaseYear = currentMovie.release_date
     ? new Date(currentMovie.release_date).getFullYear()
     : 'N/A';
 
-  // Formatlı süre
   const formattedTime = formatRuntime(currentMovie.runtime);
+
+  const formatCurrency = (amount) => {
+    if (!amount || amount <= 0) return null;
+    return '$' + (amount / 1000000).toFixed(1) + 'M';
+  };
+
+  const handleRatingClick = (score) => {
+    if (!isAuthenticated && onRequireAuth) {
+      onRequireAuth();
+      return;
+    }
+    if (onRateMovie) {
+      onRateMovie(currentMovie.id, score);
+    }
+  };
 
   const activeInsight = insight || {
     atmosphere: 'Atmosferik & Etkileyici',
@@ -128,7 +139,7 @@ export default function MovieModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl max-h-[90vh] bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl overflow-y-auto custom-scrollbar text-slate-100"
+        className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xl overflow-y-auto custom-scrollbar text-slate-900 dark:text-slate-100 transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Kapat Butonu */}
@@ -161,16 +172,20 @@ export default function MovieModal({
                 </div>
               )}
 
-              {/* Gradient Kaplama */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-transparent to-transparent" />
 
-              {/* Başlık & İki Ayrı Liste Butonu */}
+              {/* Başlık & Butonlar */}
               <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                   <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-wide drop-shadow-md">
                     {currentMovie.title}
                   </h2>
+                  {currentMovie.original_title && currentMovie.original_title !== currentMovie.title && (
+                    <p className="text-xs text-slate-300 italic font-mono mt-0.5">
+                      Orijinal Adı: {currentMovie.original_title}
+                    </p>
+                  )}
                   {currentMovie.tagline && (
                     <p className="text-xs sm:text-sm text-rose-400 italic mt-1 font-medium">
                       "{currentMovie.tagline}"
@@ -178,7 +193,6 @@ export default function MovieModal({
                   )}
                 </div>
 
-                {/* Aksiyon Butonları (İzleyeceklerim & İzlediklerim) */}
                 <div className="flex items-center gap-2">
                   {onToggleWatchlist && (
                     <button
@@ -214,42 +228,85 @@ export default function MovieModal({
             {/* Detay İçeriği */}
             <div className="p-6 sm:p-8 space-y-6">
               {/* Meta Bilgi Çubuğu */}
-              <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
+              <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm border-b border-slate-200 dark:border-slate-800 pb-4">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 dark:text-amber-400 font-bold">
                   <Star className="w-4 h-4 fill-amber-400" />
                   <span>{currentMovie.vote_average ? Number(currentMovie.vote_average).toFixed(1) : 'N/A'}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-slate-300">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                   <Calendar className="w-4 h-4 text-rose-500" />
                   <span>{releaseYear}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-slate-300">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                   <Clock className="w-4 h-4 text-rose-500" />
                   <span>{formattedTime}</span>
                 </div>
 
                 {currentMovie.original_language && (
-                  <div className="flex items-center gap-1.5 text-slate-300 uppercase font-mono">
+                  <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 uppercase font-mono">
                     <Globe className="w-4 h-4 text-rose-500" />
                     <span>Dil: {currentMovie.original_language}</span>
                   </div>
                 )}
 
-                <div className="flex items-center gap-1.5 text-slate-300">
+                {formatCurrency(currentMovie.budget) && (
+                  <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                    <DollarSign className="w-4 h-4 text-emerald-500" />
+                    <span>Bütçe: {formatCurrency(currentMovie.budget)}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                   <Clapperboard className="w-4 h-4 text-rose-500" />
-                  <span>Yönetmen: <strong className="text-white font-medium">{director}</strong></span>
+                  <span>Yönetmen: <strong className="text-slate-900 dark:text-white font-medium">{director}</strong></span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-slate-300">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                   <FileText className="w-4 h-4 text-rose-500" />
-                  <span>Senaryo: <strong className="text-white font-medium">{writer}</strong></span>
+                  <span>Senaryo: <strong className="text-slate-900 dark:text-white font-medium">{writer}</strong></span>
+                </div>
+              </div>
+
+              {/* İNTERAKTİF KULLANICI PUANLAMA ALANI */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 gap-3">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-400" />
+                  <div>
+                    <h4 className="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">
+                      Filmi Puanla
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      {userRating > 0 ? `Verdiğin Puan: ${userRating} / 10` : 'Kişisel puanını vermek için yıldızlara tıkla'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                    <button
+                      key={star}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => handleRatingClick(star)}
+                      className="p-1 transition-transform hover:scale-125 cursor-pointer"
+                      title={`${star} Yıldız Ver`}
+                    >
+                      <Star
+                        className={`w-4 h-4 transition-colors ${
+                          (hoverRating || userRating) >= star
+                            ? 'text-amber-400 fill-amber-400'
+                            : 'text-slate-400 dark:text-slate-700'
+                        }`}
+                      />
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* CINEPICK ANLATI & ATMOSFER ANALİZİ BÖLÜMÜ */}
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-rose-500/30 shadow-xl space-y-4">
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-rose-500/30 shadow-xl space-y-4 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-rose-500 animate-pulse" />
@@ -265,7 +322,6 @@ export default function MovieModal({
                   )}
                 </div>
 
-                {/* Rozetler ve Kartlar */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -288,7 +344,6 @@ export default function MovieModal({
                   </div>
                 </div>
 
-                {/* Ana Temalar */}
                 {activeInsight.keyThemes && activeInsight.keyThemes.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     <span className="flex items-center gap-1 text-xs font-semibold text-slate-400 mr-1">
@@ -306,7 +361,6 @@ export default function MovieModal({
                   </div>
                 )}
 
-                {/* Neden İzlemelisin? Metni */}
                 <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-rose-300">
                     <BookOpen className="w-3.5 h-3.5" />
@@ -318,14 +372,14 @@ export default function MovieModal({
                 </div>
               </div>
 
-              {/* YouTube Fragmanı (Trailer) Alanı */}
+              {/* YouTube Fragmanı */}
               {trailerKey && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-rose-400 flex items-center gap-2">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-rose-500 flex items-center gap-2">
                     <Play className="w-4 h-4 text-rose-500 fill-rose-500" />
                     Resmi Fragman
                   </h3>
-                  <div className="aspect-video w-full rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
+                  <div className="aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl bg-black">
                     <iframe
                       src={`https://www.youtube.com/embed/${trailerKey}?rel=0`}
                       title={`${currentMovie.title} Trailer`}
@@ -343,7 +397,7 @@ export default function MovieModal({
                   {currentMovie.genres.map((genre) => (
                     <span
                       key={genre.id || genre.name}
-                      className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-800 border border-slate-700 text-rose-300"
+                      className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-rose-600 dark:text-rose-300"
                     >
                       {typeof genre === 'string' ? genre : genre.name}
                     </span>
@@ -354,7 +408,7 @@ export default function MovieModal({
               {/* Afiş + Özet Bölümü */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                 {posterUrl && (
-                  <div className="hidden md:block md:col-span-1 rounded-xl overflow-hidden border border-slate-800 shadow-xl aspect-[2/3]">
+                  <div className="hidden md:block md:col-span-1 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl aspect-[2/3]">
                     <img
                       src={posterUrl}
                       alt={currentMovie.title}
@@ -368,17 +422,16 @@ export default function MovieModal({
                     <h3 className="text-sm font-bold uppercase tracking-wider text-rose-500 mb-2">
                       Film Özeti
                     </h3>
-                    <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+                    <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
                       {currentMovie.overview || 'Bu film için henüz Türkçe özet bulunmamaktadır.'}
                     </p>
                   </div>
 
-                  {/* Oyuncu Kadrosu (İlk 5 Kişi) */}
                   {topCast.length > 0 && (
                     <div className="pt-2">
                       <div className="flex items-center gap-2 mb-3">
                         <Users className="w-4 h-4 text-rose-500" />
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Öne Çıkan Oyuncular
                         </h3>
                       </div>
@@ -386,9 +439,9 @@ export default function MovieModal({
                         {topCast.map((actor) => (
                           <div
                             key={actor.id || actor.name}
-                            className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/60 border border-slate-800"
+                            className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800"
                           >
-                            <div className="w-8 h-8 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700 flex items-center justify-center text-xs text-slate-400 font-bold">
+                            <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-400 dark:border-slate-700 flex items-center justify-center text-xs text-slate-700 dark:text-slate-400 font-bold">
                               {actor.profile_path ? (
                                 <img
                                   src={`${IMAGE_BASE_URL}${actor.profile_path}`}
@@ -400,11 +453,11 @@ export default function MovieModal({
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-semibold text-slate-200 truncate">
+                              <p className="text-xs font-semibold text-slate-900 dark:text-slate-200 truncate">
                                 {actor.name}
                               </p>
                               {actor.character && (
-                                <p className="text-[10px] text-slate-400 truncate">
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                                   {actor.character}
                                 </p>
                               )}
