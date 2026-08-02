@@ -27,6 +27,15 @@ const tmdbClient = axios.create({
   },
 });
 
+// Yardımcı: Dakikayı Saat & Dakika formatına dönüştürme (örn: 135 -> "2s 15dk")
+export const formatRuntime = (minutes) => {
+  if (!minutes || minutes <= 0) return 'Bilinmiyor';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}dk`;
+  return mins > 0 ? `${hours}s ${mins}dk` : `${hours}s`;
+};
+
 // Popüler Filmler
 export const getPopularMovies = async () => {
   if (IS_TMDB && CLEAN_API_KEY) {
@@ -48,7 +57,8 @@ export const getPopularMovies = async () => {
       vote_average: 8.5,
       overview: 'Klasik sinematik eser.',
       release_date: '1995-01-01',
-      runtime: 120
+      runtime: 120,
+      original_language: 'en'
     }));
   } catch (err) {
     console.error('Film listesi alınamadı:', err);
@@ -97,8 +107,9 @@ export const getMovieDetails = async (movieId) => {
     title: 'Örnek Sinema Eseri',
     overview: 'Bu film hakkında kasvetli, felsefi ve derin sinematik incelemeler ve detaylar sunulmaktadır.',
     release_date: '2022-10-15',
-    runtime: 134,
+    runtime: 135,
     vote_average: 8.4,
+    original_language: 'en',
     genres: [{ id: 18, name: 'Drama' }, { id: 9648, name: 'Gizem' }],
     poster_path: null,
     backdrop_path: null
@@ -122,40 +133,30 @@ export const getMovieCredits = async (movieId) => {
       { id: 2, name: 'Cillian Murphy', character: 'Yan Karakter', profile_path: null },
       { id: 3, name: 'Marion Cotillard', character: 'Gizemli Kadın', profile_path: null },
       { id: 4, name: 'Willem Dafoe', character: 'Felsefeci', profile_path: null },
+      { id: 5, name: 'Paul Dano', character: 'Yazar', profile_path: null },
     ],
     crew: [
-      { id: 10, name: 'Christopher Nolan', job: 'Director' }
+      { id: 10, name: 'Christopher Nolan', job: 'Director' },
+      { id: 11, name: 'Jonathan Nolan', job: 'Writer' }
     ]
   };
 };
 
-// Narrative Engine (Spring Boot API + JS Fallback Entegrasyonu)
-export const fetchNarrativeAnalysis = async (movieData) => {
-  const payload = {
-    title: movieData.title || '',
-    overview: movieData.overview || '',
-    genres: Array.isArray(movieData.genres) ? movieData.genres.map(g => typeof g === 'string' ? g : g.name) : [],
-    runtime: movieData.runtime || 120,
-    voteAverage: movieData.vote_average || 8.0,
-    releaseYear: movieData.release_date ? new Date(movieData.release_date).getFullYear() : 2020,
-  };
-
-  try {
-    const response = await axios.post(SPRING_BOOT_URL, payload, { timeout: 2000 });
-    if (response.data && response.data.atmosphere) {
-      return {
-        vibe: response.data.atmosphere,
-        pace: response.data.narrativePace,
-        insight: response.data.whyToWatch,
-        source: 'Spring Boot Java Backend',
-      };
+// Varsa YouTube Fragmanı Getir (/movie/{movie_id}/videos)
+export const getMovieVideos = async (movieId) => {
+  if (IS_TMDB && CLEAN_API_KEY && typeof movieId !== 'string' && movieId > 100) {
+    try {
+      const response = await tmdbClient.get(`/movie/${movieId}/videos`, {
+        params: { language: 'en-US' } // YouTube fragmanları genelde en-US key ile döner
+      });
+      const videos = response.data.results || [];
+      const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos[0];
+      return trailer ? trailer.key : null;
+    } catch (err) {
+      console.warn(`TMDB fragman alınamadı (ID: ${movieId}):`, err);
     }
-  } catch (err) {
-    // Spring Boot kapalı ise istemci tarafı Pure JS Motoru devreye girer
   }
-
-  const jsResult = analyzeNarrativeJS(movieData);
-  return { ...jsResult, source: 'Pure JavaScript Engine' };
+  return null;
 };
 
 // Arama Yap

@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { getMovieDetails, getMovieCredits, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
+import { getMovieDetails, getMovieCredits, getMovieVideos, formatRuntime, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
 import { fetchMovieInsight } from '../services/narrativeApi';
-import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, Check, Sparkles, Activity, BookOpen, Cpu, Tag } from 'lucide-react';
+import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, CheckCircle2, Sparkles, Activity, BookOpen, Cpu, Tag, Play, FileText, Globe } from 'lucide-react';
 
-export default function MovieModal({ movie, movieId, onClose, isBookmarked, onToggleWatchlist }) {
+export default function MovieModal({
+  movie,
+  movieId,
+  onClose,
+  isInWatchlist,
+  isWatched,
+  onToggleWatchlist,
+  onToggleWatched,
+}) {
   const [details, setDetails] = useState(null);
   const [credits, setCredits] = useState(null);
   const [insight, setInsight] = useState(null);
+  const [trailerKey, setTrailerKey] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const activeId = movie?.id || movieId;
@@ -17,12 +26,17 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
     let isMounted = true;
     setLoading(true);
 
-    Promise.all([getMovieDetails(activeId), getMovieCredits(activeId)])
-      .then(([detailsData, creditsData]) => {
+    Promise.all([
+      getMovieDetails(activeId),
+      getMovieCredits(activeId),
+      getMovieVideos(activeId),
+    ])
+      .then(([detailsData, creditsData, videoKey]) => {
         if (!isMounted) return;
         const currentMovieData = detailsData || movie;
         setDetails(currentMovieData);
         setCredits(creditsData);
+        setTrailerKey(videoKey);
 
         // Java Spring Boot NarrativeEngine / narrativeApi analizi başlat
         fetchMovieInsight(currentMovieData).then((insightRes) => {
@@ -64,7 +78,8 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
   if (!activeId) return null;
 
   const currentMovie = details || movie || {};
-  const inWatchlist = isBookmarked ? isBookmarked(currentMovie.id) : false;
+  const inWatchlist = isInWatchlist ? isInWatchlist(currentMovie.id) : false;
+  const inWatched = isWatched ? isWatched(currentMovie.id) : false;
 
   // Arka plan resmi
   const backdropUrl = currentMovie.backdrop_path
@@ -84,8 +99,9 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
       : `${IMAGE_BASE_URL}${currentMovie.poster_path}`
     : null;
 
-  // Yönetmen bulma
+  // Yönetmen ve Senarist bulma
   const director = credits?.crew?.find(c => c.job === 'Director')?.name || 'Bilinmiyor';
+  const writer = credits?.crew?.find(c => c.job === 'Writer' || c.job === 'Screenplay' || c.job === 'Story')?.name || 'Bilinmiyor';
 
   // Oyuncular (İlk 5 kişi)
   const topCast = credits?.cast?.slice(0, 5) || [];
@@ -94,6 +110,9 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
   const releaseYear = currentMovie.release_date
     ? new Date(currentMovie.release_date).getFullYear()
     : 'N/A';
+
+  // Formatlı süre
+  const formattedTime = formatRuntime(currentMovie.runtime);
 
   const activeInsight = insight || {
     atmosphere: 'Atmosferik & Etkileyici',
@@ -146,8 +165,8 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-transparent to-transparent" />
 
-              {/* Başlık & İzleme Listesi Butonu */}
-              <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between gap-4">
+              {/* Başlık & İki Ayrı Liste Butonu */}
+              <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                   <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-wide drop-shadow-md">
                     {currentMovie.title}
@@ -159,28 +178,36 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   )}
                 </div>
 
-                {onToggleWatchlist && (
-                  <button
-                    onClick={() => onToggleWatchlist(currentMovie)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shadow-xl ${
-                      inWatchlist
-                        ? 'bg-rose-600 border-rose-500 text-white shadow-rose-600/30 ring-2 ring-rose-500/50'
-                        : 'bg-slate-900/90 border-slate-700 text-slate-200 hover:bg-rose-600 hover:border-rose-500 hover:text-white'
-                    }`}
-                  >
-                    {inWatchlist ? (
-                      <>
-                        <Check className="w-4 h-4 text-white" />
-                        <span>Listede Ekli</span>
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="w-4 h-4 text-rose-400 group-hover:text-white" />
-                        <span>İzleme Listeme Ekle</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                {/* Aksiyon Butonları (İzleyeceklerim & İzlediklerim) */}
+                <div className="flex items-center gap-2">
+                  {onToggleWatchlist && (
+                    <button
+                      onClick={() => onToggleWatchlist(currentMovie)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all duration-200 cursor-pointer shadow-lg ${
+                        inWatchlist
+                          ? 'bg-rose-600 border-rose-500 text-white ring-2 ring-rose-500/50'
+                          : 'bg-slate-900/90 border-slate-700 text-slate-200 hover:bg-rose-600 hover:border-rose-500 hover:text-white'
+                      }`}
+                    >
+                      <Bookmark className={`w-4 h-4 ${inWatchlist ? 'fill-white' : ''}`} />
+                      <span>{inWatchlist ? 'İzleneceklerde Ekli' : 'İzleyeceklerime Ekle'}</span>
+                    </button>
+                  )}
+
+                  {onToggleWatched && (
+                    <button
+                      onClick={() => onToggleWatched(currentMovie)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all duration-200 cursor-pointer shadow-lg ${
+                        inWatched
+                          ? 'bg-emerald-600 border-emerald-500 text-white ring-2 ring-emerald-500/50'
+                          : 'bg-slate-900/90 border-slate-700 text-slate-200 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{inWatched ? 'İzlendi' : 'İzledim'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -198,10 +225,15 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   <span>{releaseYear}</span>
                 </div>
 
-                {currentMovie.runtime > 0 && (
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <Clock className="w-4 h-4 text-rose-500" />
-                    <span>{currentMovie.runtime} dk</span>
+                <div className="flex items-center gap-1.5 text-slate-300">
+                  <Clock className="w-4 h-4 text-rose-500" />
+                  <span>{formattedTime}</span>
+                </div>
+
+                {currentMovie.original_language && (
+                  <div className="flex items-center gap-1.5 text-slate-300 uppercase font-mono">
+                    <Globe className="w-4 h-4 text-rose-500" />
+                    <span>Dil: {currentMovie.original_language}</span>
                   </div>
                 )}
 
@@ -209,9 +241,14 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   <Clapperboard className="w-4 h-4 text-rose-500" />
                   <span>Yönetmen: <strong className="text-white font-medium">{director}</strong></span>
                 </div>
+
+                <div className="flex items-center gap-1.5 text-slate-300">
+                  <FileText className="w-4 h-4 text-rose-500" />
+                  <span>Senaryo: <strong className="text-white font-medium">{writer}</strong></span>
+                </div>
               </div>
 
-              {/* CINEPICK ANLATI & ATMOSFER ANALİZİ BÖLÜMÜ (narrativeApi) */}
+              {/* CINEPICK ANLATI & ATMOSFER ANALİZİ BÖLÜMÜ */}
               <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-rose-500/30 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -251,7 +288,7 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   </div>
                 </div>
 
-                {/* Ana Temalar (Key Themes) Rozetleri */}
+                {/* Ana Temalar */}
                 {activeInsight.keyThemes && activeInsight.keyThemes.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     <span className="flex items-center gap-1 text-xs font-semibold text-slate-400 mr-1">
@@ -280,6 +317,25 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                   </p>
                 </div>
               </div>
+
+              {/* YouTube Fragmanı (Trailer) Alanı */}
+              {trailerKey && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-rose-400 flex items-center gap-2">
+                    <Play className="w-4 h-4 text-rose-500 fill-rose-500" />
+                    Resmi Fragman
+                  </h3>
+                  <div className="aspect-video w-full rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${trailerKey}?rel=0`}
+                      title={`${currentMovie.title} Trailer`}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Tür Etiketleri */}
               {currentMovie.genres && currentMovie.genres.length > 0 && (
@@ -317,7 +373,7 @@ export default function MovieModal({ movie, movieId, onClose, isBookmarked, onTo
                     </p>
                   </div>
 
-                  {/* Oyuncu Kadrosu */}
+                  {/* Oyuncu Kadrosu (İlk 5 Kişi) */}
                   {topCast.length > 0 && (
                     <div className="pt-2">
                       <div className="flex items-center gap-2 mb-3">
