@@ -9,17 +9,18 @@ import java.io.Serializable;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class MovieAnalysisRequest implements Serializable {
+@AllArgsConstructor
+@NoArgsConstructor
+public class TmdbMovieDto implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private Long tmdbId;
+    private Long id;
     private String title;
     private String overview;
-    private List<String> genres;
-    private Integer runtime;
+    private String posterPath;
+    private String releaseDate;
     private Double voteAverage;
-    private Integer releaseYear;
+    private Integer runtime;
+    private List<String> genres;
 }
