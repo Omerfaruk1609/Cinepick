@@ -22,7 +22,7 @@ public class MovieEmbeddingService {
         }
 
         try {
-            float[] embedding = embeddingModel.embed(overview);
+            List<Double> embedding = embeddingModel.embed(overview);
             String vectorString = convertToPgVectorString(embedding);
 
             String sql = """
@@ -44,7 +44,7 @@ public class MovieEmbeddingService {
         }
 
         try {
-            float[] queryEmbedding = embeddingModel.embed(queryText);
+            List<Double> queryEmbedding = embeddingModel.embed(queryText);
             String vectorString = convertToPgVectorString(queryEmbedding);
 
             String sql = """
@@ -61,11 +61,11 @@ public class MovieEmbeddingService {
         }
     }
 
-    private String convertToPgVectorString(float[] vector) {
+    private String convertToPgVectorString(List<?> vector) {
         StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < vector.length; i++) {
-            sb.append(vector[i]);
-            if (i < vector.length - 1) {
+        for (int i = 0; i < vector.size(); i++) {
+            sb.append(vector.get(i));
+            if (i < vector.size() - 1) {
                 sb.append(",");
             }
         }

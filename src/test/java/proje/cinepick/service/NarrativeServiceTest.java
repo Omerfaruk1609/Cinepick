@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
 import proje.cinepick.buisness.NarrativeEngineManager;
 import proje.cinepick.dto.MovieAnalysisRequest;
 import proje.cinepick.dto.MovieAnalysisResponse;
@@ -46,7 +47,7 @@ class NarrativeServiceTest {
 
     @Test
     void shouldFallbackToRuleBasedEngineWhenLlmFails() {
-        when(chatModel.call(any())).thenThrow(new RuntimeException("LLM Timeout"));
+        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("LLM Timeout"));
 
         MovieAnalysisResponse expectedFallback = MovieAnalysisResponse.builder()
                 .atmosphere("Karanlık ve Gergin")
