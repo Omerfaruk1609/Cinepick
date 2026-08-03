@@ -95,7 +95,12 @@ export const getMoviesByGenre = async (genreIds = []) => {
 export const getMovieDetails = async (movieId) => {
   if (IS_TMDB && CLEAN_API_KEY && typeof movieId !== 'string' && movieId > 100) {
     try {
-      const response = await tmdbClient.get(`/movie/${movieId}`);
+      const response = await tmdbClient.get(`/movie/${movieId}`, {
+        params: {
+          append_to_response: 'images',
+          include_image_language: 'en,null'
+        }
+      });
       return response.data;
     } catch (err) {
       console.warn(`TMDB film detayları alınamadı (ID: ${movieId}):`, err);
@@ -176,4 +181,19 @@ export const searchMovies = async (query) => {
 
   const allMovies = await getPopularMovies();
   return allMovies.filter(m => m.title.toLowerCase().includes(query.toLowerCase()));
+};
+
+// Türkiye Yayın Haklarını Getir (/movie/{movie_id}/watch/providers)
+export const getMovieWatchProviders = async (movieId) => {
+  if (IS_TMDB && CLEAN_API_KEY && typeof movieId !== 'string' && movieId > 100) {
+    try {
+      const response = await tmdbClient.get(`/movie/${movieId}/watch/providers`);
+      if (response.data && response.data.results) {
+        return response.data.results.TR || null;
+      }
+    } catch (err) {
+      console.warn(`TMDB Watch Providers alınamadı (ID: ${movieId}):`, err);
+    }
+  }
+  return null;
 };

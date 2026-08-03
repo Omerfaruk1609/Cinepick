@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // Sınıf tabanlı tema kontrolünü aktif eder
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
