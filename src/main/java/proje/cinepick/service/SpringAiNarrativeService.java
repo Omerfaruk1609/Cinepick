@@ -18,11 +18,17 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SpringAiNarrativeService {
 
     private final ChatModel chatModel;
     private final NarrativeEngineManager fallbackNarrativeEngine;
+
+    public SpringAiNarrativeService(
+            @org.springframework.beans.factory.annotation.Qualifier("openAiChatModel") ChatModel chatModel,
+            NarrativeEngineManager fallbackNarrativeEngine) {
+        this.chatModel = chatModel;
+        this.fallbackNarrativeEngine = fallbackNarrativeEngine;
+    }
 
     private static final String SYSTEM_PROMPT = """
             You are a world-class film critic and cinematic analyst.

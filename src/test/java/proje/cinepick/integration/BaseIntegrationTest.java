@@ -28,7 +28,7 @@ public class BaseIntegrationTest {
 
     @Container
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-            DockerImageName.parse("ankane/pgvector:v0.5.1")
+            DockerImageName.parse("pgvector/pgvector:pg16")
                     .asCompatibleSubstituteFor("postgres")
     )
             .withDatabaseName("cinepick_test")

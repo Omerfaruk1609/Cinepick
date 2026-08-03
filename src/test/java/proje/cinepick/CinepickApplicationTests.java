@@ -8,14 +8,27 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa",
+    "spring.datasource.password=",
+    "spring.flyway.enabled=false",
+    "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class CinepickApplicationTests {
 
-    @MockBean
-    private ChatModel chatModel;
+    @MockBean(name = "openAiChatModel")
+    private ChatModel openAiChatModel;
 
-    @MockBean
-    private EmbeddingModel embeddingModel;
+    @MockBean(name = "ollamaChatModel")
+    private ChatModel ollamaChatModel;
+
+    @MockBean(name = "openAiEmbeddingModel")
+    private EmbeddingModel openAiEmbeddingModel;
+
+    @MockBean(name = "ollamaEmbeddingModel")
+    private EmbeddingModel ollamaEmbeddingModel;
 
     @MockBean
     private RedisConnectionFactory redisConnectionFactory;
