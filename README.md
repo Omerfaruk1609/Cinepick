@@ -2,18 +2,19 @@
 
 # 🎬 CinePick
 
-### AI-Powered Movie Recommendation & Discovery Platform
+### AI-Powered Personalized Movie Recommendation & Cinema Discovery Platform
 
-*Hybrid LLM + Vector Search | Spring Boot 3.2 + React 19 | Production-Grade Stack*
-
-![Architecture](C:\Users\ÖMER FARUK\.gemini\antigravity\brain\b7f295a5-77d3-4c48-80bd-74b8bf229e01\cinepick_architecture_1785683476329.jpg)
+*Hybrid Vector Search | Spring AI LLM | Dynamic Taste Centroid ($V_{user}$) | Spring Boot 3.2 + React 19 | Production-Grade Stack*
 
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2.4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring AI](https://img.shields.io/badge/Spring_AI-1.0.0-0073EC?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-ai)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
 [![Redis](https://img.shields.io/badge/Redis-7.0-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Nginx](https://img.shields.io/badge/Nginx-SSL-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
 
 </div>
@@ -22,80 +23,118 @@
 
 ## 📖 İçindekiler
 
-- [Proje Hakkında](#-proje-hakkında)
-- [Mimari](#-mimari)
-- [Teknoloji Yığını](#-teknoloji-yığını)
-- [Özellikler](#-özellikler)
-- [Kurulum](#-kurulum)
-- [Ortam Değişkenleri](#-ortam-değişkenleri)
-- [API Referansı](#-api-referansı)
-- [Test](#-test)
-- [İzleme & Observability](#-izleme--observability)
-- [CI/CD Pipeline](#-cicd-pipeline)
-- [Proje Yapısı](#-proje-yapısı)
-- [Git Geçmişi](#-git-geçmişi)
+- [🎯 Proje Hakkında](#-proje-hakkında)
+- [✨ Temel Özellikler & Akıllı Modüller](#-temel-özellikler--akıllı-modüller)
+- [📐 Matematiksel Modeller](#-matematiksel-modeller)
+- [🏛️ Sistem Mimarisi](#-sistem-mimarisi)
+- [🛠️ Teknoloji Yığını](#-teknoloji-yığını)
+- [🚀 Hızlı Kurulum & Çalıştırma](#-hızlı-kurulum--çalıştırma)
+- [🔒 Ortam Değişkenleri & Güvenlik](#-ortam-değişkenleri--güvenlik)
+- [📡 API Referansı](#-api-referansı)
+- [🐳 Prodüksiyon & DevOps (SSL & CI/CD)](#-prodüksiyon--devops-ssl--cicd)
+- [📜 Git Commit Geçmişi](#-git-commit-geçmişi)
 
 ---
 
 ## 🎯 Proje Hakkında
 
-**CinePick**, geleneksel kural tabanlı öneri sistemlerini tamamen geride bırakan, **Büyük Dil Modelleri (LLM)** ve **pgvector cosine similarity** aramasını birleştiren hibrit bir film öneri platformudur.
+**CinePick**, geleneksel kural tabanlı film arama sitelerini tamamen geride bırakan, **Büyük Dil Modelleri (LLM)**, **pgvector Cosine Distance Araması** ve **Dinamik Kullanıcı Profil Vektörü ($V_{user}$)** algoritmalarını birleştiren akıllı bir film öneri ve keşif platformudur.
 
-Kullanıcı, tercihlerini doğal dil ile ifade eder ("karanlık, atmosferik, 90'lar neo-noir" gibi). Backend bu metni vektöre dönüştürür ve gerçek zamanlı anlamsal eşleşme ile film önerileri üretir.
-
-### Temel Yaklaşımlar
-
-| Yaklaşım | Teknoloji | Açıklama |
-|----------|-----------|----------|
-| Anlamsal Arama | `pgvector` + Spring AI Embeddings | Film özetleri vektörize edilerek cosine similarity ile eşleşme |
-| Narrative Engine | Ollama / Llama3 | LLM tabanlı film analizi ve açıklama üretimi |
-| Güvenlik | JWT + Spring Security | Stateless kimlik doğrulama |
-| Önbellekleme | Redis + `@Cacheable` | TMDB API ve LLM yanıtları cache'lenir |
-| Hata Toleransı | Resilience4j Circuit Breaker | LLM zaman aşımında kural tabanlı fallback devreye girer |
+Platform, kullanıcının geçmiş film etkileşimlerini (favoriler, puanlar, izleme listesi) matematiksel olarak ağırlıklandırarak kişiye özel 1536 boyutlu bir zevk vektörü ($V_{user}$) hesaplar. Bu vektör PostgreSQL `pgvector` üzerinde milisaniyeler mertebesinde sorgulanarak doğrudan kullanıcının zevkine uyan filmleri çıkarır.
 
 ---
 
-## 🏛️ Mimari
+## ✨ Temel Özellikler & Akıllı Modüller
 
-![Tech Stack](C:\Users\ÖMER FARUK\.gemini\antigravity\brain\b7f295a5-77d3-4c48-80bd-74b8bf229e01\cinepick_tech_stack_1785683504365.jpg)
+### 🧠 1. Dinamik Zevk Profil Vektörü ($V_{user}$)
+- Kullanıcının geçmiş etkileşimleri ($E_i$ film vektörleri) belirlenen katsayılar ile ağırlıklandırılır ve **L2 Normalization** ile birim vektöre getirilir.
+- Sevilen filmler profil vektörünü çekerken, sevilmeyen filmler (Dislike / Düşük Puan) **negatif katsayı** ile sevilmeyen tarzları uzayda ters yöne iter.
+
+### 🎯 2. Hibrit pgvector & Genre Boost Öneri Motoru
+- **Cosine Distance (`<=>`)** ile vektör benzerliği hesaplanır.
+- PostgreSQL Overlap (`&&`) ile kullanıcının sevdiği türlere ek **Genre Boost (+0.15)** uygulanır.
+- İzlenen filmler listeden kesin olarak elenir (`NOT IN`).
+
+### ⚡ 3. Kişiselleştirilmiş % Match Skoru & Renkli Badge
+- Her film için dinamik uyum yüzdesi hesaplanır:
+  $$\text{Match \%} = \text{Clamp}\left( \Big( (Sim \cdot 0.70) + (GenreBoost \cdot 0.20) + (BaseScore \cdot 0.10) \Big) \times 100, \,\, 50, \,\, 99 \right)$$
+- Renk kodlu visual badge'ler (`%85+ Emerald`, `%70-84 Indigo`, `%50-69 Kehribar`).
+
+### 💬 4. Explainable AI (XAI) - Öneri Gerekçesi Üretimi
+- Spring AI `ChatClient` ile kullanıcının geçmişte sevdiği filmleri referans göstererek **tek cümlelik kişiselleştirilmiş gerekçeler** üretilir.
+- Üretilen açıklamalar Redis üzerinde 7 gün boyunca saklanır (`Duration.ofDays(7)`).
+
+### 🚫 5. Negatif Vektör Filtreleme & Kullanıcı Kara Listesi
+- Nefret edilen türler ve yönetmenler profilden yönetilir.
+- SQL düzeyinde `NOT (m.genres && :excludedGenres)` ve `NOT (m.director = ANY(:excludedDirectors))` filtreleri çalışır.
+
+### 📊 6. Zevk Analitiği Paneli & Sinema Persona'sı
+- **Obscurity Skoru**: İzlenen filmlerin popülerlik (TMDB Vote Count) analizi ile 0-100 arası bağımsız sinema derecelendirmesi.
+- **Sinema Persona Classification**: *"Gizli Cevher Avcısı (Indie Cinephile)"*, *"Dengeli Sinefil"*, *"Blockbuster Tutkunu"* vb.
+- En çok izlenen türler ve yönetmenler grafiksel kırılımı.
+
+### ⏱️ 7. Spoilersız 30-Second Smart Summary & Target Audience
+- Spring AI **Structured Outputs (`BeanOutputConverter`)** ile spoilersız 30 saniyelik özet.
+- **👍 Kime Göre?** (Hedef Kitle) ve **👎 Kime Göre Değil?** (Uygun Olmayan Kitle) analiz kartı.
+
+### 🤝 8. Friend Match (Arkadaşınla Birlikte Ne İzleyebilirsiniz?)
+- İki farklı kullanıcının zevk vektörleri ($V_{user1}$ ve $V_{user2}$) birleştirilerek ortak zevk vektörü ($V_{group} = \text{normalize}(\frac{V_1 + V_2}{2})$) oluşturulur.
+- İkisinin de izlemediği ortak film önerileri ve **% Friendship Match** skoru hesaplanır.
+
+### 📺 9. TMDB Watch Providers (Türkiye TR Dijital Yayın Hakları)
+- Filmin Türkiye'deki yayın platformları (Netflix, Prime Video, BluTV, MUBI vb.), kiralama seçenekleri ve JustWatch yönlendirme linkleri canlı gösterilir.
+
+---
+
+## 📐 Matematiksel Modeller
+
+### A. Kullanıcı Profil Vektörü Hesaplama
+$$V_{user} = \text{normalize}\left( \sum_{i=1}^{N} w_i \cdot E_i \right)$$
+
+| Etkileşim Tipi | Ağırlık Katsayısı ($w_i$) |
+|----------------|--------------------------|
+| Favorilere Ekleme (`isFavorite`) | $+1.5$ |
+| Yüksek Puan (`rating >= 4.0`) | $+1.2$ |
+| İzleme Listesi (`inWatchlist`) | $+0.8$ |
+| Düşük Puan / Dislike (`rating <= 2.0`) | $-1.0$ (Negatif İtme) |
+
+### B. Ortak Grup Vektörü ($V_{group}$)
+$$V_{group} = \text{normalize}\left( \frac{V_{user1} + V_{user2}}{2} \right)$$
+
+---
+
+## 🏛️ Sistem Mimarisi
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        CLIENT LAYER                             │
-│              React 19 + Vite + Axios JWT Interceptor            │
+│       React 19 + Vite + Axios Interceptor + TailwindCSS         │
 └─────────────────────────┬───────────────────────────────────────┘
-                          │ HTTPS / REST
+                          │ HTTPS (Port 443)
 ┌─────────────────────────▼───────────────────────────────────────┐
-│                    NGINX REVERSE PROXY                          │
-│         SSL Termination + CORS + Security Headers               │
+│              NGINX REVERSE PROXY & SSL GATEWAY                  │
+│       SSL Termination (Certbot) + CORS + Security Headers       │
 └─────────────────────────┬───────────────────────────────────────┘
-                          │
+                          │ /api/ Proxy
 ┌─────────────────────────▼───────────────────────────────────────┐
 │               SPRING BOOT 3.2 BACKEND (Java 21)                 │
 │                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Auth Layer   │  │ Narrative     │  │ Movie Embedding      │  │
-│  │ JWT + Spring │  │ Engine (AI)   │  │ Ingestion Job        │  │
-│  │ Security     │  │ + Fallback    │  │ @Scheduled Batch     │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Redis Cache  │  │ Resilience4j │  │ Spring Actuator      │  │
-│  │ @Cacheable   │  │ Circuit      │  │ + Prometheus Metrics │  │
-│  │ Abstraction  │  │ Breaker      │  │                      │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│  ┌──────────────┐  ┌────────────────┐  ┌─────────────────────┐  │
+│  │ Auth Layer   │  │ Recommendation │  │ Spring AI Engine    │  │
+│  │ JWT Security │  │ Engine         │  │ ChatClient +        │  │
+│  └──────────────┘  └────────────────┘  │ Structured Output   │  │
+│  ┌──────────────┐  ┌────────────────┐  └─────────────────────┘  │
+│  │ Vector Math  │  │ Blacklist &    │  ┌─────────────────────┐  │
+│  │ L2 Centroid  │  │ Analytics      │  │ TMDB Resilient      │  │
+│  └──────────────┘  └────────────────┘  │ Provider Service    │  │
+│                                        └─────────────────────┘  │
 └────┬─────────────────────┬────────────────────┬─────────────────┘
      │                     │                    │
 ┌────▼──────┐     ┌────────▼──────┐    ┌───────▼──────────┐
-│PostgreSQL  │     │    Redis 7    │    │  Ollama (LLM)    │
-│+ pgvector  │     │   (Cache)     │    │  Llama3/Mistral  │
-│(Vectors)   │     │               │    │                  │
+│PostgreSQL  │     │    Redis 7    │    │  Spring AI LLM   │
+│+ pgvector  │     │ Vector Cache  │    │  OpenAI / Ollama │
+│(1536 dim)  │     │ + TTL Store   │    │                  │
 └────────────┘     └───────────────┘    └──────────────────┘
-                                                 │
-                                        ┌────────▼──────────┐
-                                        │    TMDB API       │
-                                        │  (Film Veritabanı)│
-                                        └───────────────────┘
 ```
 
 ---
@@ -103,364 +142,113 @@ Kullanıcı, tercihlerini doğal dil ile ifade eder ("karanlık, atmosferik, 90'
 ## 🛠️ Teknoloji Yığını
 
 ### Backend
-| Teknoloji | Versiyon | Kullanım |
-|-----------|----------|----------|
-| Java | 21 (Virtual Threads) | Platform dili |
-| Spring Boot | 3.2.4 | Ana framework |
-| Spring AI | 1.0.0-M1 | LLM entegrasyonu + Embedding |
-| Spring Security | 6.x | JWT tabanlı auth |
-| Spring Data JPA | 3.2.x | ORM katmanı |
-| Spring Data Redis | 3.2.x | Cache katmanı |
-| Resilience4j | 2.2.0 | Circuit breaker + Rate limiter |
-| Spring Actuator | 3.2.x | Health + Prometheus metrics |
-| Micrometer Prometheus | 1.12.x | Metrik ihracatı |
-| JJWT | 0.12.6 | JWT üretimi ve doğrulama |
-| Lombok | latest | Boilerplate azaltma |
+- **Java 21** (Virtual Threads & Records)
+- **Spring Boot 3.2.4**
+- **Spring AI 1.0.0** (ChatClient & Structured Output Converters)
+- **Spring Security & JJWT 0.12.6** (Stateless JWT Auth)
+- **Spring Data JPA & Flyway** (Veritabanı migration sürümlendirme `V1`-`V4`)
+- **Spring Data Redis** (Vector & Recommendation Cache)
 
-### Veritabanı & Altyapı
-| Teknoloji | Versiyon | Kullanım |
-|-----------|----------|----------|
-| PostgreSQL | 15 | Ana veritabanı |
-| pgvector | 0.5.1 | Vektör similarity araması |
-| Redis | 7.0 Alpine | Cache + Session store |
-| Ollama | latest | Local LLM sunucu |
+### Veritabanı & Vektör Katmanı
+- **PostgreSQL 16** + **pgvector 0.5.1** (HNSW Indexing & Cosine Distance)
+- **Redis 7.0 Alpine**
 
 ### Frontend
-| Teknoloji | Versiyon | Kullanım |
-|-----------|----------|----------|
-| React | 19 | UI framework |
-| Vite | 8.2 | Build tool |
-| Axios | 1.19 | HTTP client + JWT interceptor |
-| Lucide React | 1.28 | İkon kütüphanesi |
+- **React 19** + **Vite 8.2**
+- **Tailwind CSS 3.4** (Dark Mode `class` tabanlı)
+- **Lucide React** (Modern ikon kütüphanesi)
 
-### DevOps & Observability
-| Teknoloji | Kullanım |
-|-----------|----------|
-| Docker + Docker Compose | Konteynerizasyon |
-| Nginx | Reverse proxy + SSL |
-| GitHub Actions | CI/CD pipeline |
-| Prometheus | Metrik toplama |
-| Grafana | Dashboard + Görselleştirme |
-| Testcontainers | Integration test |
+### DevOps & CI/CD
+- **Docker & Docker Compose**
+- **Nginx** (Reverse Proxy & Security Headers)
+- **Certbot Let's Encrypt** (Otomatik SSL Yenileme)
+- **GitHub Actions** (Automated CI/CD Pipeline & SSH Deploy)
 
 ---
 
-## ✨ Özellikler
+## 🚀 Hızlı Kurulum & Çalıştırma
 
-### 🤖 AI-Powered Narrative Engine
-- **Spring AI** ile Ollama (Llama3/Mistral) entegrasyonu
-- **Structured Output Converter** ile LLM yanıtlarını `MovieAnalysisResponse` DTO'ya dönüştürme
-- LLM servis zaman aşımında otomatik **kural tabanlı fallback**
-- `@Scheduled` batch job ile film özeti → vektör embedding otomatik indeksleme
+### 1. Depoyu Klonlayın
+```bash
+git clone https://github.com/Omerfaruk1609/Cinepick.git
+cd Cinepick
+```
 
-### 🔐 Production-Grade Security
-- Stateless JWT kimlik doğrulama (Access Token)
-- `ApplicationConfig` üzerinden döngüsel bağımlılık (circular dependency) çözümü
-- CORS + Security headers (Nginx seviyesinde)
+### 2. Ortam Değişkenlerini Oluşturun
+Proje kök dizininde `.env.production` dosyasını yapılandırın:
+```env
+DB_URL=jdbc:postgresql://postgres:5432/cinepick_db
+DB_USERNAME=cinepick_user
+DB_PASSWORD=SuperSecretPassword123!
+JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+JWT_EXPIRATION=86400000
+REDIS_HOST=redis
+REDIS_PORT=6379
+TMDB_API_KEY=your_tmdb_api_key_here
+```
 
-### ⚡ Performans & Hata Toleransı
-- **Java 21 Virtual Threads** ile non-blocking I/O
-- Redis `@Cacheable` ile TMDB API ve LLM yanıt önbellekleme
-- Resilience4j **Circuit Breaker** — açık devrede fallback otomatik devreye girer
-- Resilience4j **Rate Limiter** — TMDB API throttling koruması
-- HikariCP connection pool (max 20 bağlantı)
-
-### 📊 Observability
-- Spring Boot Actuator: `/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`
-- Prometheus + **Grafana Dashboard** (4 panel: JVM Heap, HTTP Latency p95/p99, Redis Hit/Miss, HikariCP)
+### 3. Docker Compose ile Tüm Sistemi Başlatın
+```bash
+docker compose up -d --build
+```
 
 ---
 
-## 🚀 Kurulum
+## 🔒 Ortam Değişkenleri & Güvenlik
 
-### Ön Gereksinimler
-
-- Docker Desktop 24+
-- Docker Compose v2+
-- Java 21 (local geliştirme)
-- Node.js 20+ (local geliştirme)
-- Ollama (`ollama pull llama3`)
-
-### 1. Repoyu Klonla
-
-```bash
-git clone https://github.com/<kullanici>/cinepick.git
-cd cinepick
-```
-
-### 2. Ortam Değişkenlerini Ayarla
-
-```bash
-cp .env.example .env
-# .env dosyasını düzenle (aşağıdaki tabloya bak)
-```
-
-### 3. Docker Compose ile Çalıştır
-
-```bash
-# Tüm stack'i ayağa kaldır
-docker compose up -d
-
-# Sadece altyapıyı başlat (local geliştirme için)
-docker compose up -d postgres redis ollama
-```
-
-### 4. Monitoring Stack (Opsiyonel)
-
-```bash
-cd monitoring
-docker compose -f docker-compose.monitoring.yml up -d
-```
-
-### 5. Servis URL'leri
-
-| Servis | URL |
-|--------|-----|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8080/api/v1 |
-| Actuator Health | http://localhost:8080/actuator/health |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3001 (admin/admin) |
-| Ollama | http://localhost:11434 |
-
----
-
-## 🔧 Ortam Değişkenleri
-
-> **Kritik:** `JWT_SECRET` ve `TMDB_API_KEY` **kesinlikle** ortam değişkeni olarak verilmelidir. Kaynak kodunda bulunmaz.
-
-| Değişken | Zorunlu | Varsayılan | Açıklama |
-|----------|---------|------------|----------|
-| `SPRING_DATASOURCE_URL` | ✅ | `jdbc:postgresql://localhost:5432/cinepick_db` | PostgreSQL JDBC URL |
-| `SPRING_DATASOURCE_USERNAME` | ✅ | `postgres` | DB kullanıcı adı |
-| `SPRING_DATASOURCE_PASSWORD` | ✅ | — | DB şifresi |
-| `JWT_SECRET` | ✅ | — | 256-bit hex JWT imzalama anahtarı |
-| `JWT_EXPIRATION_MS` | ❌ | `86400000` (24 saat) | Token geçerlilik süresi (ms) |
-| `TMDB_API_KEY` | ✅ | — | TMDB API anahtarı |
-| `TMDB_BASE_URL` | ❌ | `https://api.themoviedb.org/3` | TMDB API base URL |
-| `REDIS_HOST` | ❌ | `localhost` | Redis sunucu adresi |
-| `REDIS_PORT` | ❌ | `6379` | Redis portu |
-| `REDIS_PASSWORD` | ❌ | — | Redis şifresi |
+| Değişken | Açıklama |
+|----------|----------|
+| `DB_URL` | PostgreSQL JDBC bağlantı adresi |
+| `DB_USERNAME` | Veritabanı kullanıcı adı |
+| `DB_PASSWORD` | Veritabanı şifresi |
+| `JWT_SECRET` | 256-bit JWT imzalama gizli anahtarı |
+| `REDIS_HOST` | Redis sunucu adresi |
+| `TMDB_API_KEY` | TMDB API Anahtarı |
 
 ---
 
 ## 📡 API Referansı
 
-### Kimlik Doğrulama
-
-```http
-POST /api/v1/auth/register
-Content-Type: application/json
-
-{
-  "username": "johndoe",
-  "email": "john@example.com",
-  "password": "securepassword"
-}
-```
-
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
-
-{
-  "username": "johndoe",
-  "password": "securepassword"
-}
-
-# Yanıt: { "token": "eyJhbGc..." }
-```
-
-### Narrative Engine (LLM)
-
-```http
-POST /api/v1/narrative/analyze
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "query": "karanlık neo-noir, 90'lar, atmosferik suç filmi"
-}
-```
-
-### Film Embedding (pgvector Araması)
-
-```http
-GET /api/v1/movies/similar?query=mind+bending+sci-fi+thriller&limit=10
-Authorization: Bearer <token>
-```
+| Metod | Uç Nokta | Açıklama |
+|-------|----------|----------|
+| `POST` | `/api/v1/auth/register` | Yeni kullanıcı kaydı |
+| `POST` | `/api/v1/auth/login` | JWT token ile giriş |
+| `POST` | `/api/v1/users/interactions/toggle` | Favori / İzleme listesi / Puan güncelleme |
+| `POST` | `/api/v1/users/interactions/onboarding` | Cold-start toplu film oylaması |
+| `GET` | `/api/v1/recommendations/personalized` | Kişiselleştirilmiş pgvector öneri listesi |
+| `GET` | `/api/v1/users/blacklist` | Kullanıcı kara listesi (Nefret edilen türler) |
+| `POST` | `/api/v1/users/blacklist/genres` | Kara listeye tür ekleme / çıkarma |
+| `GET` | `/api/v1/users/analytics` | Zevk Analitiği Paneli & Sinema Persona'sı |
+| `GET` | `/api/v1/movies/{id}/smart-summary` | Spoilersız 30s özet & Target Audience |
+| `GET` | `/api/v1/users/friend-match` | İki kullanıcı için ortak film önerisi |
+| `GET` | `/api/v1/movies/{id}/watch-providers` | Türkiye TR izleme platformları |
 
 ---
 
-## 🧪 Test
+## 🐳 Prodüksiyon & DevOps (SSL & CI/CD)
 
-### Unit Testler
+Projenin canlı ortam dağıtımı tamamen otomatize edilmiştir:
+- **Otomatik SSL (Certbot)**: `certbot/certbot:latest` imajı 12 saatte bir Let's Encrypt sertifikasını kontrol edip otomatik yeniler.
+- **CI/CD Pipeline (`.github/workflows/deploy.yml`)**: GitHub `main` dalına push yapıldığında unit testler çalışır, Docker imajları GHCR'a yüklenir ve VPS sunucusuna sıfır kesinti (`zero-downtime`) ile otomatik deploy edilir.
+
+---
+
+## 📜 Git Commit Geçmişi
 
 ```bash
-mvn test
+3b6a9cd feat(providers): integrate TMDB watch providers API for Turkey streaming platforms
+17f80c7 feat(ai): integrate Spring AI for single-sentence explainable recommendations
+04a1c4c feat(vector): implement VectorMathUtil for L2 normalized centroid calculation
+48f7c7f feat(api): create UserMovieInteraction entity and repository for user activities
+f98c6ea fix(theme): configure tailwind class-based dark mode and add ThemeContext provider
+90b25a8 fix(docker): replace nc check with wget healthcheck for alpine compatibility
 ```
-
-```
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
-[INFO] BUILD SUCCESS
-```
-
-| Test Sınıfı | Kapsam |
-|-------------|--------|
-| `CinepickApplicationTests` | Spring context yükleme (`@SpringBootTest`) |
-| `NarrativeServiceTest` | AI Narrative Engine — Mockito stubbing |
-
-### Integration Testler (Testcontainers)
-
-> ⚠️ Docker Desktop çalışıyor olmalıdır.
-
-```bash
-mvn verify
-```
-
-```
-[INFO] Running proje.cinepick.integration.BaseIntegrationTest
-  ✓ contextLoads_andDatabaseIsReachable
-  ✓ pgvectorExtension_isInstalled
-  ✓ redisContainer_isReachable
-[INFO] BUILD SUCCESS
-```
-
-| Test | Konteyner | Doğrulama |
-|------|-----------|-----------|
-| `contextLoads_andDatabaseIsReachable` | `ankane/pgvector:v0.5.1` | `SELECT 1` başarılı |
-| `pgvectorExtension_isInstalled` | PostgreSQL | `pg_extension`'da `vector` var |
-| `redisContainer_isReachable` | `redis:7-alpine` | Port bind edilmiş ve aktif |
-
----
-
-## 📊 İzleme & Observability
-
-### Grafana Dashboard — "CinePick Platform Observability"
-
-Grafana `http://localhost:3001` adresinde açıldığında **CinePick** klasörü altında otomatik yüklenen 4 panel bulunur:
-
-| Panel | Metrik | Grafik |
-|-------|--------|--------|
-| 🧠 JVM Heap Memory | `jvm_memory_used_bytes` | Time series |
-| ⚡ HTTP Latency p95/p99 | `http_server_requests_seconds_bucket` | Time series |
-| 🔴 Redis Hit/Miss Ratio | `cache_gets_total{result="hit/miss"}` | Donut pie |
-| 🗄️ HikariCP Connection Pool | `hikaricp_connections_active/idle/pending` | Time series |
-
-### Actuator Endpoints
-
-```http
-GET /actuator/health      # Uygulama sağlık durumu
-GET /actuator/metrics     # Tüm metrikler
-GET /actuator/prometheus  # Prometheus scrape endpoint
-GET /actuator/info        # Uygulama bilgisi
-```
-
----
-
-## 🔄 CI/CD Pipeline
-
-`.github/workflows/ci-cd.yml` ile otomatik çalışan 3 aşamalı pipeline:
-
-```
-Push to main
-     │
-     ▼
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│  Test Stage  │───▶│  Build Stage │───▶│  Deploy Stage│
-│              │    │              │    │              │
-│ mvn test     │    │ Docker Build │    │ Push to GHCR │
-│ (unit tests) │    │ Backend      │    │ docker compose│
-│              │    │ Frontend     │    │ up -d        │
-└──────────────┘    └──────────────┘    └──────────────┘
-```
-
----
-
-## 📂 Proje Yapısı
-
-```
-cinepick/
-├── 📁 src/main/java/proje/cinepick/
-│   ├── 📁 config/
-│   │   ├── ApplicationConfig.java        # UserDetailsService, PasswordEncoder, AuthManager
-│   │   ├── SecurityConfig.java           # SecurityFilterChain, CORS
-│   │   └── CacheConfig.java              # Redis CacheManager
-│   ├── 📁 controller/
-│   │   ├── AuthController.java           # /auth/register, /auth/login
-│   │   └── NarrativeController.java      # /narrative/analyze
-│   ├── 📁 service/
-│   │   ├── SpringAiNarrativeService.java # LLM-powered film analizi
-│   │   ├── MovieEmbeddingService.java    # pgvector embedding kayıt/sorgu
-│   │   ├── ResilientTmdbService.java     # Circuit breaker + cache TMDB
-│   │   └── AuthService.java             # Kayıt/giriş işlemleri
-│   ├── 📁 job/
-│   │   └── MovieEmbeddingIngestionJob.java # @Scheduled batch embedding
-│   ├── 📁 entity/
-│   │   ├── User.java
-│   │   ├── Movie.java
-│   │   └── UserMovieInteraction.java
-│   ├── 📁 security/
-│   │   ├── JwtService.java
-│   │   └── JwtAuthenticationFilter.java
-│   └── 📁 repository/
-│       ├── UserRepository.java
-│       └── MovieRepository.java          # findUnindexedMovies() native query
-│
-├── 📁 src/test/java/proje/cinepick/
-│   ├── CinepickApplicationTests.java     # Context load (@SpringBootTest)
-│   ├── service/NarrativeServiceTest.java # Unit tests (Mockito)
-│   └── integration/
-│       └── BaseIntegrationTest.java      # Testcontainers IT tests
-│
-├── 📁 cinepick/                          # React Frontend (Vite)
-│   ├── src/services/apiClient.js         # Axios + JWT interceptor
-│   └── Dockerfile                        # Multi-stage Nginx build
-│
-├── 📁 monitoring/
-│   ├── grafana/dashboards/
-│   │   └── cinepick-overview.json        # Grafana dashboard
-│   └── grafana/provisioning/             # Auto-provisioning configs
-│
-├── 📁 nginx/
-│   └── prod.conf                         # Production reverse proxy
-│
-├── 📁 .github/workflows/
-│   └── ci-cd.yml                         # GitHub Actions pipeline
-│
-├── docker-compose.yml                    # Full stack orchestration
-├── Dockerfile                            # Backend multi-stage build
-└── pom.xml                              # Maven + Testcontainers BOM
-```
-
----
-
-## 📜 Git Geçmişi
-
-| Commit | Tip | Açıklama |
-|--------|-----|----------|
-| `76c4e77` | test | Testcontainers BaseIntegrationTest (pgvector + Redis) |
-| `b2a4032` | feat | Grafana dashboard + auto-provisioning |
-| `15104c1` | fix | Frontend Docker image build hatası düzeltme |
-| `85a2393` | fix | Circular dependency + Maven unit test hataları |
-| `f9b7e43` | fix | Docker build context yolları ve CI/CD düzeltme |
-| `9f4b101` | feat | Observability: Actuator + Prometheus + Nginx |
-| `96e5cc1` | ci | Multi-stage Dockerfiles + GitHub Actions |
-| `bcf24fe` | feat | Redis caching + Resilience4j circuit breakers |
-| `adcecaa` | feat | Spring AI Narrative Engine + pgvector search |
-| `81cbe05` | feat | PostgreSQL JPA layer + JWT authentication |
-
----
-
-## 📄 Lisans
-
-Bu proje [MIT Lisansı](LICENSE) altında dağıtılmaktadır.
 
 ---
 
 <div align="center">
 
-**⭐ Beğendiyseniz yıldız atmayı unutmayın!**
+**⭐ Beğendiyseniz projeye yıldız vermeyi unutmayın!**
 
 *CinePick — Where AI Meets Cinema*
 
