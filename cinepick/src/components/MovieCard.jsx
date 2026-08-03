@@ -1,6 +1,8 @@
 import React from 'react';
 import { Star, Bookmark, CheckCircle2 } from 'lucide-react';
 import { IMAGE_BASE_URL } from '../services/api';
+import MatchBadge from './MatchBadge';
+import ReasonBadge from './ReasonBadge';
 
 export default function MovieCard({
   movie,
@@ -16,11 +18,20 @@ export default function MovieCard({
     ? `${IMAGE_BASE_URL}${movie.poster_path}`
     : null;
 
+  const matchPercentage = movie.matchPercentage || movie.match_percentage;
+  const reason = movie.recommendationReason || movie.recommendation_reason;
+
   return (
     <div
       onClick={onClick}
       className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-rose-500/50 transition-all duration-300 hover:-translate-y-1.5 shadow-lg group cursor-pointer flex flex-col justify-between relative"
     >
+      {/* Sol Üst Köşe: % Match Badge */}
+      {matchPercentage && (
+        <div className="absolute top-2.5 left-2.5 z-10">
+          <MatchBadge matchPercentage={matchPercentage} />
+        </div>
+      )}
       {/* Aksiyon Butonları (İzleyeceklerim & İzlediklerim) */}
       <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
         {/* İzleyeceklerime Ekle (Bookmark) */}
@@ -100,6 +111,9 @@ export default function MovieCard({
             </span>
           ) : null}
         </div>
+
+        {/* Explainable AI Gerekçe Kutusu */}
+        {reason && <ReasonBadge reason={reason} />}
       </div>
     </div>
   );

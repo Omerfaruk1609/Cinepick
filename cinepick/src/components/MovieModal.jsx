@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { getMovieDetails, getMovieCredits, getMovieVideos, formatRuntime, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
+import { getMovieDetails, getMovieCredits, getMovieVideos, getMovieWatchProviders, formatRuntime, BACKDROP_IMAGE_BASE_URL, IMAGE_BASE_URL } from '../services/api';
 import { fetchMovieInsight } from '../services/narrativeApi';
+import WhereToWatch from './WhereToWatch';
+import MatchBadge from './MatchBadge';
+import SmartSummaryCard from './SmartSummaryCard';
 import { X, Star, Clock, Calendar, Clapperboard, Users, Loader2, Bookmark, CheckCircle2, Sparkles, Activity, BookOpen, Cpu, Tag, Play, FileText, Globe, DollarSign, Award } from 'lucide-react';
 
 export default function MovieModal({
@@ -20,8 +23,11 @@ export default function MovieModal({
   const [credits, setCredits] = useState(null);
   const [insight, setInsight] = useState(null);
   const [trailerKey, setTrailerKey] = useState(null);
+  const [watchProviders, setWatchProviders] = useState(null);
+  const [smartSummary, setSmartSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hoverRating, setHoverRating] = useState(0);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const activeId = movie?.id || movieId;
 
@@ -35,17 +41,27 @@ export default function MovieModal({
       getMovieDetails(activeId),
       getMovieCredits(activeId),
       getMovieVideos(activeId),
+      getMovieWatchProviders(activeId),
     ])
-      .then(([detailsData, creditsData, videoKey]) => {
+      .then(([detailsData, creditsData, videoKey, providersData]) => {
         if (!isMounted) return;
         const currentMovieData = detailsData || movie;
         setDetails(currentMovieData);
         setCredits(creditsData);
         setTrailerKey(videoKey);
+        setWatchProviders(providersData);
 
         fetchMovieInsight(currentMovieData).then((insightRes) => {
           if (isMounted) {
             setInsight(insightRes);
+            if (insightRes) {
+              setSmartSummary({
+                thirtySecondOverview: insightRes.quickHook || currentMovieData.overview,
+                keyHighlights: insightRes.atmosphereTags || [],
+                forWhom: insightRes.targetAudience ? [insightRes.targetAudience, insightRes.whyToWatch] : [insightRes.whyToWatch],
+                notForWhom: insightRes.dealBreakers ? [insightRes.dealBreakers] : ['Hızlı, aksiyon dolu popüler film arayanlar']
+              });
+            }
           }
         });
 
@@ -133,6 +149,9 @@ export default function MovieModal({
     source: 'Spring Boot Java Backend'
   };
 
+  const backdrops = currentMovie.images?.backdrops || [];
+  const activeBackdropUrl = selectedImage || backdropUrl;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 bg-slate-950/80 backdrop-blur-md transition-all duration-300 animate-in fade-in"
@@ -160,11 +179,11 @@ export default function MovieModal({
           <div>
             {/* Hero & Backdrop Alanı */}
             <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-slate-950">
-              {backdropUrl ? (
+              {activeBackdropUrl ? (
                 <img
-                  src={backdropUrl}
+                  src={activeBackdropUrl}
                   alt={currentMovie.title}
-                  className="w-full h-full object-cover object-center opacity-60 scale-105"
+                  className="w-full h-full object-cover object-center opacity-60 scale-105 transition-all duration-300"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-slate-600 bg-slate-950">
@@ -229,6 +248,10 @@ export default function MovieModal({
             <div className="p-6 sm:p-8 space-y-6">
               {/* Meta Bilgi Çubuğu */}
               <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm border-b border-slate-200 dark:border-slate-800 pb-4">
+                {(currentMovie.matchPercentage || currentMovie.match_percentage) && (
+                  <MatchBadge matchPercentage={currentMovie.matchPercentage || currentMovie.match_percentage} />
+                )}
+
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 dark:text-amber-400 font-bold">
                   <Star className="w-4 h-4 fill-amber-400" />
                   <span>{currentMovie.vote_average ? Number(currentMovie.vote_average).toFixed(1) : 'N/A'}</span>
@@ -405,6 +428,12 @@ export default function MovieModal({
                 </div>
               )}
 
+              {/* Nerede İzleyebilirim? (Türkiye Watch Providers) */}
+              <WhereToWatch watchProviders={watchProviders} />
+
+              {/* Spoilersız Akıllı Özet & Kime Göre / Kime Göre Değil */}
+              <SmartSummaryCard summary={smartSummary} />
+
               {/* Afiş + Özet Bölümü */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                 {posterUrl && (
@@ -464,6 +493,37 @@ export default function MovieModal({
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dinamik Görsel Galerisi (TMDB Backdrops) */}
+                  {backdrops.length > 0 && (
+                    <div className="pt-3">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-rose-500 mb-3 flex items-center gap-2">
+                        <Clapperboard className="w-4 h-4 text-rose-500" />
+                        Film Galerisi ({backdrops.length})
+                      </h3>
+                      <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                        {backdrops.slice(0, 10).map((img, index) => {
+                          const thumbUrl = `https://image.tmdb.org/t/p/w300${img.file_path}`;
+                          const fullImgUrl = `https://image.tmdb.org/t/p/w1280${img.file_path}`;
+                          const isSelected = selectedImage === fullImgUrl;
+
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => setSelectedImage(fullImgUrl)}
+                              className={`relative flex-shrink-0 w-28 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+                                isSelected
+                                  ? 'border-rose-500 scale-105 shadow-md shadow-rose-500/20 ring-2 ring-rose-500/40'
+                                  : 'border-slate-300 dark:border-slate-800 opacity-70 hover:opacity-100 hover:scale-102'
+                              }`}
+                            >
+                              <img src={thumbUrl} alt={`Backdrop ${index}`} className="w-full h-full object-cover" />
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

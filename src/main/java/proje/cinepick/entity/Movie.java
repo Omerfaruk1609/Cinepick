@@ -1,9 +1,6 @@
 package proje.cinepick.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -16,7 +13,10 @@ import lombok.*;
 public class Movie {
 
     @Id
-    @Column(name = "tmdb_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "tmdb_id", unique = true)
     private Long tmdbId;
 
     @Column(nullable = false)
@@ -28,8 +28,21 @@ public class Movie {
     @Column(name = "poster_path")
     private String posterPath;
 
-    @Column(name = "release_year")
-    private Integer releaseYear;
+    @Column(name = "release_date")
+    private String releaseDate;
 
-    private Integer runtime;
+    @Column(name = "vote_average")
+    private Double voteAverage;
+
+    @Column(name = "embedding", columnDefinition = "vector(1536)")
+    private float[] embedding;
+
+    @Column(name = "genres", columnDefinition = "text[]")
+    private String[] genres;
+
+    @Column(name = "director")
+    private String director;
+
+    @Column(name = "vote_count")
+    private Long voteCount;
 }
