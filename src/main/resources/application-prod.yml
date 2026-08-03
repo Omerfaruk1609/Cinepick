@@ -6,9 +6,9 @@ spring:
       enabled: true
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cinepick_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgrespassword}
+    url: ${DB_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/cinepick_db}}
+    username: ${DB_USERNAME:${SPRING_DATASOURCE_USERNAME:cinepick_user}}
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:SuperSecretPassword123!}}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -19,27 +19,32 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: 2000ms
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: validate # 'update' kesinlikle kapatıldı, sadece şemayı doğrular
     show-sql: false
     properties:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true # Mevcut veritabanı varsa baseline oluşturur
+    locations: classpath:db/migration
+
 jwt:
-  secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION_MS:86400000}
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 tmdb:
   api:
-    key: ${TMDB_API_KEY}
+    key: ${TMDB_API_KEY:your_tmdb_api_key_here}
     url: ${TMDB_BASE_URL:https://api.themoviedb.org/3}
 
 management:

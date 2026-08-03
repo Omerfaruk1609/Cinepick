@@ -1,0 +1,1 @@
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS vote_count BIGINT;
