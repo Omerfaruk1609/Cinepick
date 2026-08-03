@@ -14,6 +14,7 @@ import MovieModal from './components/MovieModal';
 import EmptyWatchlist from './components/EmptyWatchlist';
 import ProfileModal from './components/ProfileModal';
 import AuthModal from './components/AuthModal';
+import OnboardingModal from './components/OnboardingModal';
 import RecommenderBlock from './components/RecommenderBlock';
 import Footer from './components/Footer';
 
@@ -29,6 +30,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   const { theme, toggleTheme } = useTheme();
   const { user, login, register, logout } = useAuth();
@@ -288,6 +290,10 @@ function App() {
         onLogin={login}
         onRegister={register}
       />
+
+      {user && user.hasCompletedOnboarding === false && showOnboarding && (
+        <OnboardingModal onComplete={() => setShowOnboarding(false)} />
+      )}
     </div>
   );
 }

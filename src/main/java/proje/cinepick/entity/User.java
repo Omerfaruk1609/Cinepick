@@ -39,6 +39,13 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "has_completed_onboarding", nullable = false)
+    @Builder.Default
+    private boolean hasCompletedOnboarding = false;
+
+    @Column(name = "user_vector", columnDefinition = "vector(1536)")
+    private float[] userVector;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
