@@ -7,9 +7,15 @@ on:
     branches: [ main ]
 
 jobs:
+  # ──────────────────────────────────────────────
+  # JOB 1: Maven Unit Tests
+  # ──────────────────────────────────────────────
   test:
     name: Backend Unit Tests & Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout Code
@@ -25,6 +31,9 @@ jobs:
       - name: Run Maven Unit Tests
         run: mvn test
 
+  # ──────────────────────────────────────────────
+  # JOB 2: Docker Image Build & Compose Smoke Test
+  # ──────────────────────────────────────────────
   docker-build:
     name: Build & Verify Docker Images
     needs: test
@@ -37,24 +46,50 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Backend Docker Image
+      - name: Build Backend Docker Image (no push)
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: false
           tags: cinepick-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Build Frontend Docker Image
+      - name: Build Frontend Docker Image (no push)
         uses: docker/build-push-action@v5
         with:
           context: ./cinepick
           file: ./cinepick/Dockerfile
           push: false
           tags: cinepick-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Test Docker Compose Orchestration
+      - name: Test Docker Compose Orchestration (postgres + redis only)
         run: |
-          docker compose up -d postgres redis
-          sleep 10
-          docker compose ps
+          # Create a minimal .env stub so docker compose doesn't fail on missing file
+          cat > .env.production <<'EOF'
+          SPRING_AI_OPENAI_API_KEY=dummy
+          JWT_SECRET=dummy-secret-for-ci-only
+          POSTGRES_PASSWORD=postgrespassword
+          EOF
+
+          # Only spin up stateful dependencies — no backend build needed here
+          docker compose -f docker-compose.yml up -d postgres redis
+
+          # Wait for services to become healthy
+          echo "Waiting for postgres and redis to be healthy..."
+          for i in $(seq 1 12); do
+            POSTGRES_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cinepick_postgres 2>/dev/null || echo "starting")
+            REDIS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cinepick_redis 2>/dev/null || echo "starting")
+            echo "  postgres=$POSTGRES_HEALTH  redis=$REDIS_HEALTH  (attempt $i/12)"
+            if [ "$POSTGRES_HEALTH" = "healthy" ] && [ "$REDIS_HEALTH" = "healthy" ]; then
+              echo "All services healthy!"
+              break
+            fi
+            sleep 5
+          done
+
+          docker compose -f docker-compose.yml ps
+          docker compose -f docker-compose.yml down
