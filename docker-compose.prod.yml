@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  cinepick_frontend:
+    build:
+      context: ./cinepick
+      dockerfile: Dockerfile
+    container_name: cinepick_frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - cinepick_backend
+    networks:
+      - cinepick_network
+
+  cinepick_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cinepick_backend
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cinepick_network
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: cinepick_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt:rw
+      - ./certbot/www:/var/www/certbot:rw
+    entrypoint: "/bin/sh -c 'trap exit TERM; while true; do certbot renew; sleep 12h & wait $${!}; done'"
+    networks:
+      - cinepick_network
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cinepick_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: cinepick_db
+      POSTGRES_USER: cinepick_user
+      POSTGRES_PASSWORD: SuperSecretPassword123!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinepick_user -d cinepick_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cinepick_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: cinepick_redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cinepick_network
+
+volumes:
+  postgres_data:
+
+networks:
+  cinepick_network:
+    driver: bridge

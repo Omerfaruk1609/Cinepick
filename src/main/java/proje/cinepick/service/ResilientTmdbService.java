@@ -47,4 +47,21 @@ public class ResilientTmdbService {
                 .genres(List.of("Drama", "Cinema"))
                 .build();
     }
+
+    @Cacheable(value = "tmdb_providers", key = "#tmdbMovieId")
+    public proje.cinepick.dto.tmdb.TmdbWatchProviderResponse.CountryProviders getTurkeyWatchProviders(Long tmdbMovieId) {
+        String url = String.format("%s/movie/%d/watch/providers?api_key=%s", 
+                tmdbApiUrl, tmdbMovieId, tmdbApiKey);
+
+        try {
+            proje.cinepick.dto.tmdb.TmdbWatchProviderResponse response = 
+                restTemplate.getForObject(url, proje.cinepick.dto.tmdb.TmdbWatchProviderResponse.class);
+            if (response != null && response.getResults() != null) {
+                return response.getResults().get("TR");
+            }
+        } catch (Exception e) {
+            log.error("TMDB Watch Providers çekilemedi. Movie ID: {}", tmdbMovieId, e);
+        }
+        return null;
+    }
 }
