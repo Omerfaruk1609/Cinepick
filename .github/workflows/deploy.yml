@@ -7,8 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE_NAME: ${{ github.repository_owner }}/cinepick-backend
-  FRONTEND_IMAGE_NAME: ${{ github.repository_owner }}/cinepick-frontend
+  BACKEND_IMAGE_NAME: omerfaruk1609/cinepick-backend
+  FRONTEND_IMAGE_NAME: omerfaruk1609/cinepick-frontend
 
 jobs:
   # -------------------------------------------------------------

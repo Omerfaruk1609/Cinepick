@@ -14,7 +14,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
     "spring.datasource.username=sa",
     "spring.datasource.password=",
     "spring.flyway.enabled=false",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.ai.openai.api-key=dummy-test-key-123456789"
 })
 class CinepickApplicationTests {
 
@@ -29,6 +30,15 @@ class CinepickApplicationTests {
 
     @MockBean(name = "ollamaEmbeddingModel")
     private EmbeddingModel ollamaEmbeddingModel;
+
+    @MockBean
+    private org.springframework.ai.image.ImageModel openAiImageModel;
+
+    @MockBean
+    private org.springframework.ai.chat.client.ChatClient.Builder chatClientBuilder;
+
+    @MockBean
+    private org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
 
     @MockBean
     private RedisConnectionFactory redisConnectionFactory;
