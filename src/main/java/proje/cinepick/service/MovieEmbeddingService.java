@@ -1,8 +1,8 @@
 package proje.cinepick.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -10,11 +10,17 @@ import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MovieEmbeddingService {
 
     private final EmbeddingModel embeddingModel;
     private final JdbcTemplate jdbcTemplate;
+
+    public MovieEmbeddingService(
+            @Qualifier("openAiEmbeddingModel") EmbeddingModel embeddingModel,
+            JdbcTemplate jdbcTemplate) {
+        this.embeddingModel = embeddingModel;
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     public void saveMovieEmbedding(Long tmdbId, String overview) {
         if (overview == null || overview.isBlank()) {
