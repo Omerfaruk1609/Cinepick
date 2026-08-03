@@ -66,10 +66,15 @@ jobs:
 
   # -------------------------------------------------------------
   # STAGE 2: PRODUCTION DEPLOYMENT (SSH)
+  # Sadece SERVER_HOST secret tanımlıysa çalışır.
+  # Sunucu yoksa bu job otomatik atlanır (skip).
   # -------------------------------------------------------------
   deploy:
     needs: test-and-build
     runs-on: ubuntu-latest
+    environment: production
+    # Bu satırı sil veya yorum satırı yap; sunucunu hazırladığında aktive et:
+    if: ${{ vars.ENABLE_DEPLOY == 'true' }}
 
     steps:
       - name: Deploy to Remote Production VPS via SSH
