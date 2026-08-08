@@ -37,3 +37,11 @@ build/
 .env.*
 !.env.example
 
+### k6 Load Test Results ###
+k6/results/
+results/
+*.k6-summary.json
+
+### Benchmark Reports (generated, not source) ###
+BENCHMARK_RESULTS.md
+
