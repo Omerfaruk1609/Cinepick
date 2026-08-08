@@ -26,6 +26,13 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class BaseIntegrationTest {
 
+    static {
+        System.setProperty("DOCKER_HOST", "tcp://localhost:2375");
+        System.setProperty("api.version", "1.44");
+    }
+
+
+
     @Container
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
             DockerImageName.parse("pgvector/pgvector:pg16")
@@ -41,11 +48,14 @@ public class BaseIntegrationTest {
             DockerImageName.parse("redis:7-alpine")
     );
 
-    @MockBean
+    @MockBean(name = "openAiChatModel")
     ChatModel chatModel;
 
-    @MockBean
+    @MockBean(name = "openAiEmbeddingModel")
     EmbeddingModel embeddingModel;
+
+
+
 
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
