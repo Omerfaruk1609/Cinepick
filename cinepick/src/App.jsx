@@ -18,7 +18,7 @@ import OnboardingModal from './components/OnboardingModal';
 import RecommenderBlock from './components/RecommenderBlock';
 import Footer from './components/Footer';
 
-import { Bookmark, CheckCircle2, Loader2, Compass } from 'lucide-react';
+import { Bookmark, CheckCircle2, Loader2, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function App() {
   const [movies, setMovies] = useState([]);
@@ -31,6 +31,9 @@ function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
 
   const { theme, toggleTheme } = useTheme();
   const { user, login, register, logout } = useAuth();
@@ -76,6 +79,7 @@ function App() {
   // Arama metni değiştiğinde
   const handleSearchChange = (query) => {
     setSearchQuery(query);
+    setCurrentPage(1);
     if (query.trim().length > 0) {
       setSelectedMoodId('all');
       setSelectedGenreId(0);
@@ -94,6 +98,7 @@ function App() {
     setSelectedMoodId(mood.id);
     setSelectedGenreId(0); // Mood seçilince Tür filtresini sıfırla
     setSearchQuery('');
+    setCurrentPage(1);
     fetchMovies(mood.id, 0);
   };
 
@@ -102,6 +107,7 @@ function App() {
     setSelectedGenreId(genreId);
     setSelectedMoodId('all'); // Tür seçilince Mood filtresini sıfırla
     setSearchQuery('');
+    setCurrentPage(1);
     fetchMovies('all', genreId);
   };
 
@@ -111,6 +117,7 @@ function App() {
     setSelectedMoodId('all');
     setSelectedGenreId(0);
     setSearchQuery('');
+    setCurrentPage(1);
     fetchMovies('all', 0);
   };
 
@@ -121,6 +128,19 @@ function App() {
   };
 
   const displayedMovies = getDisplayedMovies();
+  const totalMovies = displayedMovies.length;
+  const totalPages = Math.ceil(totalMovies / itemsPerPage) || 1;
+  const indexOfLastMovie = currentPage * itemsPerPage;
+  const indexOfFirstMovie = indexOfLastMovie - itemsPerPage;
+  const current50Movies = displayedMovies.slice(indexOfFirstMovie, indexOfLastMovie);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 350, behavior: 'smooth' });
+    }
+  };
+
   const currentMoodObj = MOODS.find((m) => m.id === selectedMoodId);
 
   return (
@@ -129,7 +149,7 @@ function App() {
         {/* Header */}
         <Header
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => { setActiveTab(tab); setCurrentPage(1); }}
           watchlistCount={watchlist.length}
           watchedCount={watched.length}
           selectedMoodLabel={currentMoodObj ? currentMoodObj.label : 'Tümü'}
@@ -161,22 +181,23 @@ function App() {
                 onMovieClick={setSelectedMovie}
               />
 
-              {/* Ruh Hali Seçici */}
-              <MoodSelector
-                selectedMoodId={selectedMoodId}
-                onSelectMood={handleMoodSelect}
-              />
+              {/* Mood Selector & Genre Selector */}
+              <div className="my-6 space-y-6">
+                <MoodSelector
+                  selectedMoodId={selectedMoodId}
+                  onSelectMood={handleMoodSelect}
+                />
 
-              {/* Tür / Kategori Filtresi (Chips Slider) */}
-              <GenreSelector
-                selectedGenreId={selectedGenreId}
-                onSelectGenre={handleGenreSelect}
-              />
+                <GenreSelector
+                  selectedGenreId={selectedGenreId}
+                  onSelectGenre={handleGenreSelect}
+                />
+              </div>
             </>
           )}
 
-          {/* Bölüm Başlığı */}
-          <div className="flex items-center justify-between mb-6">
+          {/* Film Listesi Başlığı */}
+          <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200 dark:border-slate-800">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
               {activeTab === 'explore' ? (
                 searchQuery ? (
@@ -201,7 +222,7 @@ function App() {
               )}
             </h2>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-              {displayedMovies.length} Film Bulundu
+              {totalMovies} Film Bulundu (Sayfa {currentPage}/{totalPages})
             </span>
           </div>
 
@@ -212,7 +233,7 @@ function App() {
               <p className="text-sm">Filmler yükleniyor...</p>
             </div>
           ) : activeTab === 'watchlist' && watchlist.length === 0 ? (
-            <EmptyWatchlist onGoToExplore={() => setActiveTab('explore')} />
+            <EmptyWatchlist onGoToExplore={() => { setActiveTab('explore'); setCurrentPage(1); }} />
           ) : activeTab === 'watched' && watched.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-4 text-center border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl bg-slate-100 dark:bg-slate-900/40">
               <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800/80 flex items-center justify-center text-emerald-500 mb-4 border border-slate-300 dark:border-slate-700/50">
@@ -225,7 +246,7 @@ function App() {
                 İzlediğiniz filmlerin üzerindeki onay ikonuna tıklayarak izlediklerim listenize ekleyebilirsiniz.
               </p>
               <button
-                onClick={() => setActiveTab('explore')}
+                onClick={() => { setActiveTab('explore'); setCurrentPage(1); }}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition-all shadow-lg shadow-rose-600/25 cursor-pointer"
               >
                 <Compass className="w-4 h-4" />
@@ -237,20 +258,54 @@ function App() {
               Gösterilecek film bulunamadı.
             </div>
           ) : (
-            /* Film Grid Listesi */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {displayedMovies.map((movie) => (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  isInWatchlist={isInWatchlist(movie.id)}
-                  isWatched={isWatched(movie.id)}
-                  onToggleWatchlist={toggleWatchlist}
-                  onToggleWatched={toggleWatched}
-                  onClick={() => setSelectedMovie(movie)}
-                />
-              ))}
-            </div>
+            <>
+              {/* 50'şerli Film Grid Listesi */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {current50Movies.map((movie) => (
+                  <MovieCard
+                    key={movie.id}
+                    movie={movie}
+                    isInWatchlist={isInWatchlist(movie.id)}
+                    isWatched={isWatched(movie.id)}
+                    onToggleWatchlist={toggleWatchlist}
+                    onToggleWatched={toggleWatched}
+                    onClick={() => setSelectedMovie(movie)}
+                  />
+                ))}
+              </div>
+
+              {/* 50'şerli İleri / Geri Sayfalama Butonları */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-10 pt-6 border-t border-slate-200 dark:border-slate-800">
+                  <div className="text-xs text-slate-500 font-mono">
+                    Gösterilen: {indexOfFirstMovie + 1} - {Math.min(indexOfLastMovie, totalMovies)} / Toplam {totalMovies} Film
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-600 hover:text-white text-xs font-semibold disabled:opacity-40 disabled:hover:bg-slate-200 disabled:hover:text-current transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Önceki Sayfa</span>
+                    </button>
+
+                    <span className="px-3.5 py-1.5 text-xs font-bold font-mono rounded-lg bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                      Sayfa {currentPage} / {totalPages}
+                    </span>
+
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-600 hover:text-white text-xs font-semibold disabled:opacity-40 disabled:hover:bg-slate-200 disabled:hover:text-current transition-all cursor-pointer"
+                    >
+                      <span>Sonraki Sayfa</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
