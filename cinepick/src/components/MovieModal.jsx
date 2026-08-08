@@ -38,7 +38,7 @@ export default function MovieModal({
     setLoading(true);
 
     Promise.all([
-      getMovieDetails(activeId),
+      getMovieDetails(activeId, movie),
       getMovieCredits(activeId),
       getMovieVideos(activeId),
       getMovieWatchProviders(activeId),

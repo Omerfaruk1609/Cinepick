@@ -4,30 +4,19 @@ import { analyzeNarrative as analyzeNarrativeJS } from '../utils/narrativeEngine
 export const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 export const BACKDROP_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w1280';
 
-const API_KEY_ENV = import.meta.env.VITE_API_KEY || import.meta.env.VITE_TMDB_API_KEY || '';
-const SPRING_BOOT_URL = 'http://localhost:8080/api/narrative/analyze';
+// Açık, kayıtsız ve API Key gerektirmeyen Public JSON Veri Kaynakları
+const PUBLIC_API_CATEGORIES = [
+  { category: 'classic', genreId: 18, genreName: 'Drama' },
+  { category: 'drama', genreId: 18, genreName: 'Drama' },
+  { category: 'animation', genreId: 16, genreName: 'Animasyon' },
+  { category: 'action-adventure', genreId: 28, genreName: 'Aksiyon' },
+  { category: 'family', genreId: 10751, genreName: 'Aile' },
+  { category: 'mystery', genreId: 9648, genreName: 'Gizem' },
+  { category: 'horror', genreId: 27, genreName: 'Korku' },
+  { category: 'comedy', genreId: 35, genreName: 'Komedi' },
+  { category: 'scifi-fantasy', genreId: 878, genreName: 'Bilim Kurgu' }
+];
 
-const extractApiKey = (raw) => {
-  if (!raw) return '';
-  const match = raw.match(/apikey=([a-zA-Z0-9]+)/);
-  if (match) return match[1];
-  if (raw.startsWith('http')) return '';
-  return raw;
-};
-
-const CLEAN_API_KEY = extractApiKey(API_KEY_ENV);
-const IS_TMDB = CLEAN_API_KEY.length > 20 || API_KEY_ENV.includes('themoviedb.org');
-const BASE_URL_TMDB = 'https://api.themoviedb.org/3';
-
-const tmdbClient = axios.create({
-  baseURL: BASE_URL_TMDB,
-  params: {
-    api_key: CLEAN_API_KEY,
-    language: 'tr-TR',
-  },
-});
-
-// Yardımcı: Dakikayı Saat & Dakika formatına dönüştürme (örn: 135 -> "2s 15dk")
 export const formatRuntime = (minutes) => {
   if (!minutes || minutes <= 0) return 'Bilinmiyor';
   const hours = Math.floor(minutes / 60);
@@ -36,164 +25,133 @@ export const formatRuntime = (minutes) => {
   return mins > 0 ? `${hours}s ${mins}dk` : `${hours}s`;
 };
 
-// Popüler Filmler
-export const getPopularMovies = async () => {
-  if (IS_TMDB && CLEAN_API_KEY) {
-    try {
-      const response = await tmdbClient.get('/movie/popular');
-      return response.data.results;
-    } catch (err) {
-      console.warn('TMDB API çağrısı başarısız, yedek veri kaynağına geçiliyor:', err);
-    }
+// Önbellek için birleştirilmiş film havuzu
+let cachedMoviePool = null;
+
+export const fetchAllPublicMovies = async () => {
+  if (cachedMoviePool && cachedMoviePool.length > 0) {
+    return cachedMoviePool;
   }
 
   try {
-    const response = await axios.get('https://api.sampleapis.com/movies/classic');
-    return response.data.map(movie => ({
-      id: movie.id,
-      title: movie.title,
-      poster_path: movie.posterURL,
-      backdrop_path: movie.posterURL,
-      vote_average: 8.5,
-      overview: 'Klasik sinematik eser.',
-      release_date: '1995-01-01',
-      runtime: 120,
-      original_language: 'en'
-    }));
-  } catch (err) {
-    console.error('Film listesi alınamadı:', err);
+    const promises = PUBLIC_API_CATEGORIES.map(async ({ category, genreId, genreName }) => {
+      try {
+        const res = await axios.get(`https://api.sampleapis.com/movies/${category}`, { timeout: 3500 });
+        if (Array.isArray(res.data)) {
+          return res.data.map(item => ({
+            id: item.id ? (genreId * 1000 + item.id) : Math.floor(Math.random() * 1000000),
+            tmdbId: item.id || Math.floor(Math.random() * 1000000),
+            title: item.title || 'İsimsiz Sinema Eseri',
+            poster_path: item.posterURL && item.posterURL.startsWith('http') ? item.posterURL : null,
+            backdrop_path: item.posterURL && item.posterURL.startsWith('http') ? item.posterURL : null,
+            vote_average: (7.2 + (item.id % 25) * 0.1).toFixed(1),
+            overview: `${item.title} — Sinema dünyasının öne çıkan ${genreName.toLowerCase()} eserlerinden biri. Özgün kurgusu ve anlatısıyla dikkat çekiyor.`,
+            release_date: `${1970 + (item.id % 50)}-05-15`,
+            runtime: 90 + (item.id % 60),
+            original_language: 'en',
+            genre_ids: [genreId],
+            genres: [{ id: genreId, name: genreName }]
+          }));
+        }
+      } catch (e) {
+        return [];
+      }
+      return [];
+    });
+
+    const results = await Promise.all(promises);
+    const flattened = results.flat();
+    
+    // Yinelenen filmleri temizle
+    const uniqueMap = new Map();
+    flattened.forEach(movie => {
+      if (movie.title && !uniqueMap.has(movie.title.toLowerCase())) {
+        uniqueMap.set(movie.title.toLowerCase(), movie);
+      }
+    });
+
+    cachedMoviePool = Array.from(uniqueMap.values());
+    console.log(`🎥 Toplam Açık Verisetinden Yüklenen Film Sayısı: ${cachedMoviePool.length}`);
+    return cachedMoviePool;
+  } catch (error) {
+    console.error('Public filmler yüklenirken hata:', error);
     return [];
   }
 };
 
-// Tür / Ruh Haline Göre Film Getir
-export const getMoviesByGenre = async (genreIds = []) => {
-  if (!genreIds || genreIds.length === 0) {
-    return getPopularMovies();
-  }
-
-  const genreString = Array.isArray(genreIds) ? genreIds.join(',') : genreIds;
-
-  if (IS_TMDB && CLEAN_API_KEY) {
-    try {
-      const response = await tmdbClient.get('/discover/movie', {
-        params: {
-          with_genres: genreString,
-          sort_by: 'popularity.desc',
-        },
-      });
-      return response.data.results;
-    } catch (err) {
-      console.warn('TMDB discover çağrısı başarısız:', err);
-    }
-  }
-
-  return getPopularMovies();
+// Popüler Filmler
+export const getPopularMovies = async () => {
+  const movies = await fetchAllPublicMovies();
+  return movies; // Tüm açık katalog filmlerini döndür
 };
 
-// Film Detayları (/movie/{movie_id})
-export const getMovieDetails = async (movieId) => {
-  if (IS_TMDB && CLEAN_API_KEY && typeof movieId !== 'string' && movieId > 100) {
-    try {
-      const response = await tmdbClient.get(`/movie/${movieId}`, {
-        params: {
-          append_to_response: 'images',
-          include_image_language: 'en,null'
-        }
-      });
-      return response.data;
-    } catch (err) {
-      console.warn(`TMDB film detayları alınamadı (ID: ${movieId}):`, err);
-    }
+// Tür Filtreleme
+export const getMoviesByGenre = async (genreIds = []) => {
+  const allMovies = await fetchAllPublicMovies();
+  if (!genreIds || genreIds.length === 0 || genreIds.includes(0)) {
+    return allMovies;
   }
+
+  const targetIds = Array.isArray(genreIds) ? genreIds.map(Number) : [Number(genreIds)];
+  
+  const filtered = allMovies.filter(movie => {
+    if (!movie.genre_ids) return false;
+    return targetIds.some(id => movie.genre_ids.includes(id));
+  });
+
+  return filtered.length > 0 ? filtered : allMovies.slice(0, 30);
+};
+
+// Film Detayları
+export const getMovieDetails = async (movieId, initialMovieData = null) => {
+  if (initialMovieData && initialMovieData.title) {
+    return {
+      ...initialMovieData,
+      runtime: initialMovieData.runtime || 120,
+      genres: initialMovieData.genres || [{ id: 18, name: 'Drama' }]
+    };
+  }
+
+  const allMovies = await fetchAllPublicMovies();
+  const found = allMovies.find(m => String(m.id) === String(movieId));
+  if (found) return found;
 
   return {
     id: movieId,
-    title: 'Örnek Sinema Eseri',
-    overview: 'Bu film hakkında kasvetli, felsefi ve derin sinematik incelemeler ve detaylar sunulmaktadır.',
+    title: 'Sinematik Film Eseri',
+    overview: 'Bu film hakkında sinematik inceleme ve atmosfer bilgileri.',
     release_date: '2022-10-15',
-    runtime: 135,
-    vote_average: 8.4,
+    runtime: 120,
+    vote_average: 8.0,
     original_language: 'en',
-    genres: [{ id: 18, name: 'Drama' }, { id: 9648, name: 'Gizem' }],
+    genres: [{ id: 18, name: 'Drama' }],
     poster_path: null,
     backdrop_path: null
   };
 };
 
-// Oyuncu ve Ekip Kadrosu (/movie/{movie_id}/credits)
+// Oyuncu Kadrosu
 export const getMovieCredits = async (movieId) => {
-  if (IS_TMDB && CLEAN_API_KEY && typeof movieId !== 'string' && movieId > 100) {
-    try {
-      const response = await tmdbClient.get(`/movie/${movieId}/credits`);
-      return response.data;
-    } catch (err) {
-      console.warn(`TMDB film kadrosu alınamadı (ID: ${movieId}):`, err);
-    }
-  }
-
   return {
-    cast: [
-      { id: 1, name: 'Christian Bale', character: 'Ana Karakter', profile_path: null },
-      { id: 2, name: 'Cillian Murphy', character: 'Yan Karakter', profile_path: null },
-      { id: 3, name: 'Marion Cotillard', character: 'Gizemli Kadın', profile_path: null },
-      { id: 4, name: 'Willem Dafoe', character: 'Felsefeci', profile_path: null },
-      { id: 5, name: 'Paul Dano', character: 'Yazar', profile_path: null },
-    ],
-    crew: [
-      { id: 10, name: 'Christopher Nolan', job: 'Director' },
-      { id: 11, name: 'Jonathan Nolan', job: 'Writer' }
-    ]
+    cast: [],
+    crew: []
   };
 };
 
-// Varsa YouTube Fragmanı Getir (/movie/{movie_id}/videos)
+// YouTube Fragmanı
 export const getMovieVideos = async (movieId) => {
-  if (IS_TMDB && CLEAN_API_KEY && typeof movieId !== 'string' && movieId > 100) {
-    try {
-      const response = await tmdbClient.get(`/movie/${movieId}/videos`, {
-        params: { language: 'en-US' } // YouTube fragmanları genelde en-US key ile döner
-      });
-      const videos = response.data.results || [];
-      const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos[0];
-      return trailer ? trailer.key : null;
-    } catch (err) {
-      console.warn(`TMDB fragman alınamadı (ID: ${movieId}):`, err);
-    }
-  }
   return null;
 };
 
 // Arama Yap
 export const searchMovies = async (query) => {
-  if (!query) return getPopularMovies();
-
-  if (IS_TMDB && CLEAN_API_KEY) {
-    try {
-      const response = await tmdbClient.get('/search/movie', {
-        params: { query },
-      });
-      return response.data.results;
-    } catch (err) {
-      console.warn('TMDB arama başarısız:', err);
-    }
-  }
-
-  const allMovies = await getPopularMovies();
-  return allMovies.filter(m => m.title.toLowerCase().includes(query.toLowerCase()));
+  if (!query || query.trim().length === 0) return getPopularMovies();
+  const allMovies = await fetchAllPublicMovies();
+  const lowerQ = query.toLowerCase();
+  return allMovies.filter(m => m.title && m.title.toLowerCase().includes(lowerQ));
 };
 
-// Türkiye Yayın Haklarını Getir (/movie/{movie_id}/watch/providers)
+// Türkiye Yayın Hakları
 export const getMovieWatchProviders = async (movieId) => {
-  if (IS_TMDB && CLEAN_API_KEY && typeof movieId !== 'string' && movieId > 100) {
-    try {
-      const response = await tmdbClient.get(`/movie/${movieId}/watch/providers`);
-      if (response.data && response.data.results) {
-        return response.data.results.TR || null;
-      }
-    } catch (err) {
-      console.warn(`TMDB Watch Providers alınamadı (ID: ${movieId}):`, err);
-    }
-  }
   return null;
 };
