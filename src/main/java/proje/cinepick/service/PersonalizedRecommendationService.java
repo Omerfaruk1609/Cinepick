@@ -1,22 +1,22 @@
 package proje.cinepick.service;
 
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import proje.cinepick.dto.MovieDto;
 import proje.cinepick.entity.Movie;
+import proje.cinepick.entity.UserBlacklist;
 import proje.cinepick.repository.MovieRepository;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
-import proje.cinepick.entity.UserBlacklist;
-
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PersonalizedRecommendationService {
 
     private final MovieRepository movieRepository;
@@ -26,7 +26,43 @@ public class PersonalizedRecommendationService {
     private final BlacklistService blacklistService;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    // ─── Micrometer Metrics ───────────────────────────────────────────────────
+    private final Timer recommendationTimer;
+    private final Counter cacheHitCounter;
+    private final Counter cacheMissCounter;
+
+    public PersonalizedRecommendationService(
+            MovieRepository movieRepository,
+            CachedUserVectorService userVectorService,
+            MatchCalculatorService matchCalculatorService,
+            AsyncExplanationService asyncExplanationService,
+            BlacklistService blacklistService,
+            RedisTemplate<String, Object> redisTemplate,
+            MeterRegistry meterRegistry) {
+        this.movieRepository = movieRepository;
+        this.userVectorService = userVectorService;
+        this.matchCalculatorService = matchCalculatorService;
+        this.asyncExplanationService = asyncExplanationService;
+        this.blacklistService = blacklistService;
+        this.redisTemplate = redisTemplate;
+
+        this.recommendationTimer = Timer.builder("cinepick.recommendation.latency")
+                .description("Personalized recommendation generation latency")
+                .tag("service", "PersonalizedRecommendationService")
+                .register(meterRegistry);
+        this.cacheHitCounter = Counter.builder("cinepick.recommendation.cache.hit")
+                .description("Number of recommendation cache hits")
+                .register(meterRegistry);
+        this.cacheMissCounter = Counter.builder("cinepick.recommendation.cache.miss")
+                .description("Number of recommendation cache misses")
+                .register(meterRegistry);
+    }
+
     public List<MovieDto> getPersonalizedRecommendations(Long userId, List<String> favoriteGenres, int limit) {
+        return recommendationTimer.record(() -> generateRecommendations(userId, favoriteGenres, limit));
+    }
+
+    private List<MovieDto> generateRecommendations(Long userId, List<String> favoriteGenres, int limit) {
         String cacheKey = "user:rec:" + userId;
 
         // 1. Önbellek Kontrolü (Redis)
@@ -34,11 +70,14 @@ public class PersonalizedRecommendationService {
             @SuppressWarnings("unchecked")
             List<MovieDto> cachedRecs = (List<MovieDto>) redisTemplate.opsForValue().get(cacheKey);
             if (cachedRecs != null) {
+                cacheHitCounter.increment();
                 log.info("Personalized recommendations fetched from Redis cache for userId: {}", userId);
                 return cachedRecs;
             }
+            cacheMissCounter.increment();
         } catch (Exception e) {
             log.warn("Redis read failed for recommendation cache: {}", e.getMessage());
+            cacheMissCounter.increment();
         }
 
         // 2. Kullanıcı Profil Vektörünü Getir ($V_user)

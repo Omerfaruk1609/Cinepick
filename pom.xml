@@ -209,6 +209,8 @@
 					<excludes>
 						<exclude>**/*IntegrationTest.java</exclude>
 					</excludes>
+					<!-- Exclude LLM benchmark: needs local Ollama, not suitable for CI -->
+					<excludedGroups>llm-benchmark</excludedGroups>
 				</configuration>
 			</plugin>
 			<plugin>

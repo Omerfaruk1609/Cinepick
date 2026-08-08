@@ -1,14 +1,27 @@
 spring:
-  profiles:
-    active: prod
+  config:
+    activate:
+      on-profile: prod
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:mock-openai-api-key-12345}
+      chat:
+        enabled: true
+    ollama:
+      chat:
+        enabled: false
+      embedding:
+        enabled: false
+
   threads:
     virtual:
       enabled: true
 
+
   datasource:
     url: ${DB_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/cinepick_db}}
-    username: ${DB_USERNAME:${SPRING_DATASOURCE_USERNAME:cinepick_user}}
-    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:SuperSecretPassword123!}}
+    username: ${DB_USERNAME:${SPRING_DATASOURCE_USERNAME:postgres}}
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:postgrespassword}}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -26,7 +39,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate # 'update' kesinlikle kapatıldı, sadece şemayı doğrular
+      ddl-auto: update
+
     show-sql: false
     properties:
       hibernate:

@@ -2,10 +2,10 @@ package proje.cinepick.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import proje.cinepick.dto.MovieDto;
+import proje.cinepick.dto.SearchResultDto;
+import proje.cinepick.service.MovieSearchService;
 
 import java.util.List;
 
@@ -17,6 +17,27 @@ public class MovieController {
     private final proje.cinepick.service.ResilientTmdbService tmdbService;
     private final proje.cinepick.service.SmartSummaryService smartSummaryService;
     private final proje.cinepick.repository.MovieRepository movieRepository;
+    private final MovieSearchService movieSearchService;
+
+    /**
+     * Unified movie search endpoint.
+     *
+     * @param q     search query (required)
+     * @param mode  "keyword" | "semantic" | "hybrid" (default: hybrid)
+     * @param page  zero-based page index (default: 0)
+     * @param size  page size, max 50 (default: 20)
+     */
+    @GetMapping("/search")
+    public ResponseEntity<SearchResultDto> search(
+            @RequestParam String q,
+            @RequestParam(required = false, defaultValue = "hybrid") String mode,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+
+        int safeSize = Math.min(size, 50);
+        SearchResultDto result = movieSearchService.search(q, mode, page, safeSize);
+        return ResponseEntity.ok(result);
+    }
 
     @GetMapping("/onboarding-pool")
     public ResponseEntity<List<MovieDto>> getOnboardingPool() {

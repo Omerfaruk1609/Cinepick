@@ -51,7 +51,7 @@ public class MovieEmbeddingIngestionJob {
 
             log.info("Batch embedding ingestion finished. Successfully indexed {}/{} movies.", successCount, unindexedMovies.size());
         } catch (Exception e) {
-            log.error("Error executing movie embedding ingestion batch job", e);
+            log.warn("Movie embedding ingestion job skipped: {}", e.getMessage());
         }
     }
 }

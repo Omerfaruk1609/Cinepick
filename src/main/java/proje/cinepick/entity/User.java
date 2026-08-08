@@ -43,8 +43,12 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean hasCompletedOnboarding = false;
 
+    @Convert(converter = proje.cinepick.entity.converter.VectorConverter.class)
+    @org.hibernate.annotations.ColumnTransformer(read = "user_vector::text", write = "CAST(? AS vector)")
     @Column(name = "user_vector", columnDefinition = "vector(1536)")
     private float[] userVector;
+
+
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
