@@ -15,7 +15,9 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
     "spring.datasource.password=",
     "spring.flyway.enabled=false",
     "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.ai.openai.api-key=dummy-test-key-123456789"
+    "spring.ai.openai.api-key=dummy-test-key-123456789",
+    "spring.data.redis.repositories.enabled=false",
+    "spring.cache.type=none"
 })
 class CinepickApplicationTests {
 

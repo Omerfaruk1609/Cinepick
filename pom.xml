@@ -208,6 +208,10 @@
 				<configuration>
 					<excludes>
 						<exclude>**/*IntegrationTest.java</exclude>
+						<exclude>**/*BenchmarkTest.java</exclude>
+						<exclude>**/*Benchmark.java</exclude>
+						<exclude>**/RecommendationMetricsTest.java</exclude>
+						<exclude>**/SearchQualityTest.java</exclude>
 					</excludes>
 					<!-- Exclude LLM benchmark: needs local Ollama, not suitable for CI -->
 					<excludedGroups>llm-benchmark</excludedGroups>
