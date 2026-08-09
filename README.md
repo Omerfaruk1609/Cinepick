@@ -15,6 +15,7 @@
 [![Redis](https://img.shields.io/badge/Redis-7.0-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 [![Nginx](https://img.shields.io/badge/Nginx-SSL-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
+[![Production Ready](https://img.shields.io/badge/Status-Production_Ready-emerald?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Omerfaruk1609/Cinepick)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
 
 </div>
