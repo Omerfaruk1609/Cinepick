@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { fetchAllPublicMovies } from '../services/api';
 import MovieCard from './MovieCard';
-import { Sparkles, RefreshCw } from 'lucide-react';
+import MatchBadge from './MatchBadge';
+import { Sparkles, RefreshCw, Flame } from 'lucide-react';
 
 export default function RecommenderBlock({
   watchlist,
@@ -17,6 +18,35 @@ export default function RecommenderBlock({
   const [loading, setLoading] = useState(true);
   const [refreshSeed, setRefreshSeed] = useState(0);
 
+  // Kullanıcının tercih ettiği tür ağırlık haritasını hesapla
+  const userGenreWeights = useMemo(() => {
+    const weights = {};
+
+    watchlist.forEach((movie) => {
+      const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
+      gIds.forEach(id => {
+        if (id) weights[id] = (weights[id] || 0) + 2.0;
+      });
+    });
+
+    watched.forEach((movie) => {
+      const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
+      gIds.forEach(id => {
+        if (id) weights[id] = (weights[id] || 0) + 1.5;
+      });
+    });
+
+    Object.entries(ratings).forEach(([movieId, score]) => {
+      const weightChange = score >= 7 ? (score - 6) * 2.0 : (score < 5 ? -3 : 0);
+      // Film türü hesabı
+      if (weightChange !== 0) {
+        weights['general'] = (weights['general'] || 0) + weightChange;
+      }
+    });
+
+    return weights;
+  }, [watchlist, watched, ratings]);
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -28,71 +58,50 @@ export default function RecommenderBlock({
         return;
       }
 
-      // Tür Ağırlık Haritası
-      const genreWeights = {};
-
-      // 1. İzleyeceklerim listesindeki filmler (Ağırlık: +2)
-      watchlist.forEach((movie) => {
-        const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
-        gIds.forEach(id => {
-          if (id) genreWeights[id] = (genreWeights[id] || 0) + 2;
-        });
-      });
-
-      // 2. İzlediklerim listesindeki filmler (Ağırlık: +1.5)
-      watched.forEach((movie) => {
-        const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
-        gIds.forEach(id => {
-          if (id) genreWeights[id] = (genreWeights[id] || 0) + 1.5;
-        });
-      });
-
-      // 3. Kullanıcının Yıldız Puanları (7+ puan: +3 Ağırlık, 5 altı: -2 Ceza)
-      Object.entries(ratings).forEach(([movieId, score]) => {
-        const movie = allMovies.find(m => String(m.id) === String(movieId));
-        if (movie) {
-          const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
-          const weightChange = score >= 7 ? (score - 6) * 1.5 : (score < 5 ? -2 : 0);
-          gIds.forEach(id => {
-            if (id) genreWeights[id] = (genreWeights[id] || 0) + weightChange;
-          });
-        }
-      });
-
-      // En yüksek ağırlığa sahip Tür ID'leri
-      const topGenreIds = Object.keys(genreWeights)
-        .map(Number)
-        .filter(id => genreWeights[id] > 0)
-        .sort((a, b) => genreWeights[b] - genreWeights[a]);
-
       // Kullanıcının zaten izlediği ve watchlist'indeki film ID'leri
       const excludedIds = new Set([
         ...watchlist.map(m => String(m.id)),
         ...watched.map(m => String(m.id))
       ]);
 
-      // Öneri Skorlama
-      let candidateMovies = allMovies.filter(m => !excludedIds.has(String(m.id)));
+      const candidates = allMovies.filter(m => !excludedIds.has(String(m.id)));
+      const hasUserPreferences = Object.keys(userGenreWeights).length > 0;
 
-      if (topGenreIds.length > 0) {
-        // En sevilen türlere uygun filmleri öncelikle seç
-        candidateMovies = candidateMovies.map(movie => {
-          const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
-          let score = 0;
+      // Her filme kararlı (deterministic) Uyum Yüzdesi ve Skor hesapla
+      const scoredMovies = candidates.map((movie, index) => {
+        const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
+        
+        let rawScore = 0;
+        if (hasUserPreferences) {
           gIds.forEach(id => {
-            if (genreWeights[id]) score += genreWeights[id];
+            if (userGenreWeights[id]) rawScore += userGenreWeights[id];
           });
-          // Küçük rastgelelik ekle (Shuffle / Taze Öneri)
-          const randomFactor = Math.random() * 1.5;
-          return { movie, score: score + randomFactor };
-        }).sort((a, b) => b.score - a.score).map(item => item.movie);
-      } else {
-        // Kullanıcının henüz etkileşimi yoksa popüler ve yüksek puanlı filmlerden rastgele 5 tane seç
-        candidateMovies = candidateMovies.sort(() => Math.random() - 0.5);
-      }
+        } else {
+          // Kullanıcı henüz tercih yapmadıysa oylama puanına göre skorla
+          rawScore = Number(movie.vote_average) || 7.5;
+        }
+
+        // Uyum yüzdesi hesapla (%82 - %98 arası kararlı skor)
+        const baseMatch = hasUserPreferences
+          ? Math.min(98, Math.max(78, Math.round(75 + rawScore * 4)))
+          : Math.min(98, Math.max(82, Math.round(70 + (Number(movie.vote_average) || 8) * 3)));
+
+        // Yenile butonuna basıldığında karıştırmak için tohum
+        const seedBonus = refreshSeed > 0 ? (index * 7 + refreshSeed * 13) % 15 : 0;
+        const finalScore = rawScore * 10 + (seedBonus / 10);
+
+        return {
+          movie,
+          finalScore,
+          matchPercentage: baseMatch,
+        };
+      });
+
+      // Yüksek puandan düşüğe doğru sırala (Kararlı sıralama)
+      scoredMovies.sort((a, b) => b.finalScore - a.finalScore);
 
       if (isMounted) {
-        setRecommended(candidateMovies.slice(0, 5));
+        setRecommended(scoredMovies.slice(0, 5));
         setLoading(false);
       }
     };
@@ -102,7 +111,7 @@ export default function RecommenderBlock({
     return () => {
       isMounted = false;
     };
-  }, [watchlist, watched, ratings, refreshSeed]);
+  }, [userGenreWeights, watchlist, watched, refreshSeed]);
 
   if (loading || recommended.length === 0) return null;
 
@@ -118,29 +127,37 @@ export default function RecommenderBlock({
         <div className="flex items-center gap-3">
           <button
             onClick={() => setRefreshSeed(prev => prev + 1)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 hover:bg-rose-600 text-xs text-slate-300 hover:text-white border border-slate-700 transition-all cursor-pointer"
-            title="Önerileri Yenile"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 hover:bg-rose-600 text-xs text-slate-300 hover:text-white border border-slate-700 transition-all cursor-pointer shadow-sm"
+            title="Farklı Öneriler Getir"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Yenile</span>
+            <span>Farklı Öneriler Getir</span>
           </button>
-          <span className="hidden sm:inline text-xs text-rose-400 font-medium">
-            Kişiselleştirilmiş Algoritma
+          <span className="hidden sm:flex items-center gap-1 text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+            <Flame className="w-3.5 h-3.5" />
+            Yüksek Uyumlu Seçimler
           </span>
         </div>
       </div>
 
+      {/* 5 Öneri Kartı + Uyum Yüzdesi Badgeleri */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-        {recommended.map((movie) => (
-          <MovieCard
-            key={movie.id}
-            movie={movie}
-            isInWatchlist={isInWatchlist(movie.id)}
-            isWatched={isWatched(movie.id)}
-            onToggleWatchlist={onToggleWatchlist}
-            onToggleWatched={onToggleWatched}
-            onClick={() => onMovieClick(movie)}
-          />
+        {recommended.map(({ movie, matchPercentage }) => (
+          <div key={movie.id} className="relative group">
+            {/* Uyum Yüzdesi Rozeti */}
+            <div className="absolute top-2 left-2 z-10">
+              <MatchBadge matchPercentage={matchPercentage} />
+            </div>
+
+            <MovieCard
+              movie={movie}
+              isInWatchlist={isInWatchlist(movie.id)}
+              isWatched={isWatched(movie.id)}
+              onToggleWatchlist={onToggleWatchlist}
+              onToggleWatched={onToggleWatched}
+              onClick={() => onMovieClick(movie)}
+            />
+          </div>
         ))}
       </div>
     </div>
