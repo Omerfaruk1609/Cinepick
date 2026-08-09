@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { getMoviesByGenre, getPopularMovies } from '../services/api';
+import { fetchAllPublicMovies } from '../services/api';
 import MovieCard from './MovieCard';
-import { Sparkles, Compass } from 'lucide-react';
+import { Sparkles, RefreshCw } from 'lucide-react';
 
 export default function RecommenderBlock({
   watchlist,
   watched,
-  ratings,
+  ratings = {},
   isInWatchlist,
   isWatched,
   onToggleWatchlist,
@@ -15,55 +15,94 @@ export default function RecommenderBlock({
 }) {
   const [recommended, setRecommended] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshSeed, setRefreshSeed] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
 
-    // En çok etkileşime girilen film türlerini çıkar
-    const genreCounts = {};
-    const allUserMovies = [...watchlist, ...watched];
-
-    allUserMovies.forEach((movie) => {
-      if (movie.genre_ids && Array.isArray(movie.genre_ids)) {
-        movie.genre_ids.forEach((id) => {
-          genreCounts[id] = (genreCounts[id] || 0) + 1;
-        });
-      } else if (movie.genres && Array.isArray(movie.genres)) {
-        movie.genres.forEach((g) => {
-          const id = typeof g === 'number' ? g : g.id;
-          if (id) genreCounts[id] = (genreCounts[id] || 0) + 1;
-        });
+    const calculateRecommendations = async () => {
+      const allMovies = await fetchAllPublicMovies();
+      if (!allMovies || allMovies.length === 0) {
+        if (isMounted) setLoading(false);
+        return;
       }
-    });
 
-    // En popüler tür ID'sini bul
-    const topGenreIds = Object.keys(genreCounts)
-      .sort((a, b) => genreCounts[b] - genreCounts[a])
-      .map(Number)
-      .slice(0, 2);
+      // Tür Ağırlık Haritası
+      const genreWeights = {};
 
-    const fetchRecommendations = async () => {
-      let data = [];
+      // 1. İzleyeceklerim listesindeki filmler (Ağırlık: +2)
+      watchlist.forEach((movie) => {
+        const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
+        gIds.forEach(id => {
+          if (id) genreWeights[id] = (genreWeights[id] || 0) + 2;
+        });
+      });
+
+      // 2. İzlediklerim listesindeki filmler (Ağırlık: +1.5)
+      watched.forEach((movie) => {
+        const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
+        gIds.forEach(id => {
+          if (id) genreWeights[id] = (genreWeights[id] || 0) + 1.5;
+        });
+      });
+
+      // 3. Kullanıcının Yıldız Puanları (7+ puan: +3 Ağırlık, 5 altı: -2 Ceza)
+      Object.entries(ratings).forEach(([movieId, score]) => {
+        const movie = allMovies.find(m => String(m.id) === String(movieId));
+        if (movie) {
+          const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
+          const weightChange = score >= 7 ? (score - 6) * 1.5 : (score < 5 ? -2 : 0);
+          gIds.forEach(id => {
+            if (id) genreWeights[id] = (genreWeights[id] || 0) + weightChange;
+          });
+        }
+      });
+
+      // En yüksek ağırlığa sahip Tür ID'leri
+      const topGenreIds = Object.keys(genreWeights)
+        .map(Number)
+        .filter(id => genreWeights[id] > 0)
+        .sort((a, b) => genreWeights[b] - genreWeights[a]);
+
+      // Kullanıcının zaten izlediği ve watchlist'indeki film ID'leri
+      const excludedIds = new Set([
+        ...watchlist.map(m => String(m.id)),
+        ...watched.map(m => String(m.id))
+      ]);
+
+      // Öneri Skorlama
+      let candidateMovies = allMovies.filter(m => !excludedIds.has(String(m.id)));
+
       if (topGenreIds.length > 0) {
-        data = await getMoviesByGenre(topGenreIds);
+        // En sevilen türlere uygun filmleri öncelikle seç
+        candidateMovies = candidateMovies.map(movie => {
+          const gIds = movie.genre_ids || (movie.genres ? movie.genres.map(g => typeof g === 'number' ? g : g.id) : []);
+          let score = 0;
+          gIds.forEach(id => {
+            if (genreWeights[id]) score += genreWeights[id];
+          });
+          // Küçük rastgelelik ekle (Shuffle / Taze Öneri)
+          const randomFactor = Math.random() * 1.5;
+          return { movie, score: score + randomFactor };
+        }).sort((a, b) => b.score - a.score).map(item => item.movie);
       } else {
-        data = await getPopularMovies();
+        // Kullanıcının henüz etkileşimi yoksa popüler ve yüksek puanlı filmlerden rastgele 5 tane seç
+        candidateMovies = candidateMovies.sort(() => Math.random() - 0.5);
       }
+
       if (isMounted) {
-        // Zaten izlenenleri filtrelere dahil etmeyelim
-        const filtered = data.filter((m) => !isWatched(m.id)).slice(0, 5);
-        setRecommended(filtered.length > 0 ? filtered : data.slice(0, 5));
+        setRecommended(candidateMovies.slice(0, 5));
         setLoading(false);
       }
     };
 
-    fetchRecommendations();
+    calculateRecommendations();
 
     return () => {
       isMounted = false;
     };
-  }, [watchlist, watched, isWatched]);
+  }, [watchlist, watched, ratings, refreshSeed]);
 
   if (loading || recommended.length === 0) return null;
 
@@ -76,9 +115,19 @@ export default function RecommenderBlock({
             Sana Özel Sinematik Öneriler
           </h2>
         </div>
-        <span className="text-xs text-rose-400 font-medium">
-          İzleme Alışkanlıklarına Göre
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setRefreshSeed(prev => prev + 1)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 hover:bg-rose-600 text-xs text-slate-300 hover:text-white border border-slate-700 transition-all cursor-pointer"
+            title="Önerileri Yenile"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Yenile</span>
+          </button>
+          <span className="hidden sm:inline text-xs text-rose-400 font-medium">
+            Kişiselleştirilmiş Algoritma
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
