@@ -48,6 +48,19 @@ function App() {
     toggleWatched,
   } = useMovieLists(user);
 
+  // Filme puan verildiğinde otomatik "İzlediklerim" kategorisine alma
+  const handleRateMovie = (movieId, score) => {
+    setMovieRating(movieId, score);
+    const targetMovie = movies.find((m) => String(m.id) === String(movieId)) ||
+                        watchlist.find((m) => String(m.id) === String(movieId)) ||
+                        watched.find((m) => String(m.id) === String(movieId)) ||
+                        selectedMovie;
+
+    if (targetMovie && !isWatched(movieId)) {
+      toggleWatched(targetMovie);
+    }
+  };
+
   // Film verilerini çekme
   const fetchMovies = async (moodId = selectedMoodId, genreId = selectedGenreId) => {
     setLoading(true);
@@ -323,7 +336,7 @@ function App() {
           onToggleWatchlist={toggleWatchlist}
           onToggleWatched={toggleWatched}
           userRating={getRating(selectedMovie.id)}
-          onRateMovie={setMovieRating}
+          onRateMovie={handleRateMovie}
           isAuthenticated={!!user}
           onRequireAuth={() => setIsAuthOpen(true)}
         />

@@ -59,13 +59,16 @@ export default function MovieCard({
           onClick={(e) => {
             e.stopPropagation();
             onToggleWatched(movie);
+            if (!isWatched && onClick) {
+              onClick(); // Puan vermesi için film detay modalını aç
+            }
           }}
           className={`p-1.5 rounded-full backdrop-blur-md transition-all duration-200 cursor-pointer border ${
             isWatched
               ? 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-600/40 scale-105'
               : 'bg-slate-950/70 border-slate-700/60 text-slate-300 hover:text-white hover:bg-emerald-600 hover:border-emerald-500'
           }`}
-          title={isWatched ? 'İzlediklerimden Çıkar' : 'İzledim Olarak İşaretle'}
+          title={isWatched ? 'İzlediklerimden Çıkar' : 'İzledim Olarak İşaretle (Puan Ver)'}
         >
           <CheckCircle2
             className={`w-3.5 h-3.5 ${
