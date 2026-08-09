@@ -46,7 +46,7 @@ function App() {
     isWatched,
     toggleWatchlist,
     toggleWatched,
-  } = useMovieLists();
+  } = useMovieLists(user);
 
   // Film verilerini çekme
   const fetchMovies = async (moodId = selectedMoodId, genreId = selectedGenreId) => {

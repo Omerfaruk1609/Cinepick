@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { updateInteraction, fetchWatchlist, fetchFavorites, syncLocalStorageToBackend } from '../services/interactionApi';
 
-const WATCHLIST_KEY = 'cinepick_watchlist';
-const WATCHED_KEY = 'cinepick_watched';
+const getWatchlistKey = (userId) => userId ? `cinepick_${userId}_watchlist` : 'cinepick_guest_watchlist';
+const getWatchedKey = (userId) => userId ? `cinepick_${userId}_watched` : 'cinepick_guest_watched';
 
-export function useMovieLists() {
+export function useMovieLists(user = null) {
+  const userId = user?.id || null;
+
   const [watchlist, setWatchlist] = useState(() => {
     try {
-      const saved = localStorage.getItem(WATCHLIST_KEY);
+      const saved = localStorage.getItem(getWatchlistKey(userId));
       return saved ? JSON.parse(saved) : [];
     } catch (err) {
       console.error('Watchlist okuma hatası:', err);
@@ -17,7 +19,7 @@ export function useMovieLists() {
 
   const [watched, setWatched] = useState(() => {
     try {
-      const saved = localStorage.getItem(WATCHED_KEY);
+      const saved = localStorage.getItem(getWatchedKey(userId));
       return saved ? JSON.parse(saved) : [];
     } catch (err) {
       console.error('Watched list okuma hatası:', err);
@@ -25,35 +27,48 @@ export function useMovieLists() {
     }
   });
 
+  // Kullanıcı değiştiğinde o kullanıcının verilerini yükle
   useEffect(() => {
+    try {
+      const savedWatchlist = localStorage.getItem(getWatchlistKey(userId));
+      setWatchlist(savedWatchlist ? JSON.parse(savedWatchlist) : []);
+
+      const savedWatched = localStorage.getItem(getWatchedKey(userId));
+      setWatched(savedWatched ? JSON.parse(savedWatched) : []);
+    } catch (err) {
+      console.error('Kullanıcı verisi yükleme hatası:', err);
+    }
+
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && userId) {
       syncLocalStorageToBackend().then(() => {
         fetchWatchlist().then(data => {
-          if (Array.isArray(data) && data.length > 0) setWatchlist(data);
+          if (Array.isArray(data)) setWatchlist(data);
         }).catch(() => {});
         fetchFavorites().then(data => {
-          if (Array.isArray(data) && data.length > 0) setWatched(data);
+          if (Array.isArray(data)) setWatched(data);
         }).catch(() => {});
       });
     }
-  }, []);
+  }, [userId]);
 
+  // Watchlist güncellendiğinde ilgili kullanıcının key'ine kaydet
   useEffect(() => {
     try {
-      localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist));
+      localStorage.setItem(getWatchlistKey(userId), JSON.stringify(watchlist));
     } catch (err) {
       console.error('Watchlist kaydetme hatası:', err);
     }
-  }, [watchlist]);
+  }, [watchlist, userId]);
 
+  // Watched list güncellendiğinde ilgili kullanıcının key'ine kaydet
   useEffect(() => {
     try {
-      localStorage.setItem(WATCHED_KEY, JSON.stringify(watched));
+      localStorage.setItem(getWatchedKey(userId), JSON.stringify(watched));
     } catch (err) {
       console.error('Watched list kaydetme hatası:', err);
     }
-  }, [watched]);
+  }, [watched, userId]);
 
   const isInWatchlist = (movieId) => watchlist.some((m) => m.id === movieId || m.tmdbId === movieId);
   const isWatched = (movieId) => watched.some((m) => m.id === movieId || m.tmdbId === movieId);
@@ -62,7 +77,6 @@ export function useMovieLists() {
     const isPresent = isInWatchlist(movie.id);
     const newStatus = !isPresent;
 
-    // Optimistic UI update
     if (isPresent) {
       setWatchlist((prev) => prev.filter((m) => m.id !== movie.id && m.tmdbId !== movie.id));
     } else {
@@ -84,7 +98,6 @@ export function useMovieLists() {
     const isPresent = isWatched(movie.id);
     const newStatus = !isPresent;
 
-    // Optimistic UI update
     if (isPresent) {
       setWatched((prev) => prev.filter((m) => m.id !== movie.id && m.tmdbId !== movie.id));
     } else {
