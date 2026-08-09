@@ -1,5 +1,5 @@
 import React from 'react';
-import { Film, Heart, Globe, Share2, MessageCircle, ShieldAlert } from 'lucide-react';
+import { Film, Heart, Github, Share2, MessageCircle, ShieldAlert } from 'lucide-react';
 
 export default function Footer({ onNavigate }) {
   return (
@@ -25,17 +25,17 @@ export default function Footer({ onNavigate }) {
           </h4>
           <ul className="space-y-2 text-xs">
             <li>
-              <button onClick={() => onNavigate && onNavigate('explore')} className="hover:text-rose-500 transition-colors">
+              <button onClick={() => onNavigate && onNavigate('explore')} className="hover:text-rose-500 transition-colors cursor-pointer">
                 Keşfet & Popüler
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate && onNavigate('watchlist')} className="hover:text-rose-500 transition-colors">
+              <button onClick={() => onNavigate && onNavigate('watchlist')} className="hover:text-rose-500 transition-colors cursor-pointer">
                 İzleyeceklerim Listesi
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate && onNavigate('watched')} className="hover:text-rose-500 transition-colors">
+              <button onClick={() => onNavigate && onNavigate('watched')} className="hover:text-rose-500 transition-colors cursor-pointer">
                 İzlediklerim
               </button>
             </li>
@@ -53,19 +53,34 @@ export default function Footer({ onNavigate }) {
           </p>
         </div>
 
-        {/* Sosyal Medya & İletişim */}
+        {/* Sosyal Medya & GitHub Bağlantısı */}
         <div className="space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-200">
-            Topluluk & Bağlantılar
+            Açık Kaynak & İletişim
           </h4>
-          <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
-            <a href="https://github.com/Omerfaruk1609/Cinepick" target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-slate-200 dark:bg-slate-900 hover:text-rose-500 transition-all" title="GitHub Deposu">
-              <Globe className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <a
+              href="https://github.com/Omerfaruk1609/Cinepick"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-900 hover:bg-rose-600 text-white text-xs font-bold transition-all border border-slate-800 hover:border-rose-500 shadow-md cursor-pointer group"
+              title="GitHub Reposunu İnceleyin"
+            >
+              <Github className="w-4 h-4 text-rose-500 group-hover:text-white transition-colors" />
+              <span>GitHub'da İncele</span>
             </a>
-            <a href="#" className="p-2 rounded-lg bg-slate-200 dark:bg-slate-900 hover:text-rose-500 transition-all" title="Sosyal Medya">
+            <a
+              href="#"
+              className="p-2 rounded-xl bg-slate-200 dark:bg-slate-900 hover:text-rose-500 transition-all border border-slate-300 dark:border-slate-800"
+              title="Sosyal Medya"
+            >
               <Share2 className="w-4 h-4" />
             </a>
-            <a href="#" className="p-2 rounded-lg bg-slate-200 dark:bg-slate-900 hover:text-rose-500 transition-all" title="İletişim">
+            <a
+              href="#"
+              className="p-2 rounded-xl bg-slate-200 dark:bg-slate-900 hover:text-rose-500 transition-all border border-slate-300 dark:border-slate-800"
+              title="İletişim"
+            >
               <MessageCircle className="w-4 h-4" />
             </a>
           </div>
