@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Mail, User, Film, LogIn, UserPlus } from 'lucide-react';
+import { X, Lock, Mail, User, Film, LogIn, UserPlus, AlertCircle } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, onLogin, onRegister }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setErrorMessage('');
+      setPassword('');
+    }
+  }, [isOpen, mode]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -21,15 +29,28 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email || !password) return;
+    setErrorMessage('');
 
-    if (mode === 'login') {
-      onLogin(email, password, username);
-    } else {
-      if (!username) return;
-      onRegister(username, email, password);
+    if (!email || !password) {
+      setErrorMessage('Lütfen e-posta ve şifrenizi girin.');
+      return;
     }
-    onClose();
+
+    try {
+      if (mode === 'login') {
+        onLogin(email, password);
+        onClose();
+      } else {
+        if (!username) {
+          setErrorMessage('Lütfen bir kullanıcı adı girin.');
+          return;
+        }
+        onRegister(username, email, password);
+        onClose();
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
+    }
   };
 
   return (
@@ -64,9 +85,18 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }) {
           </p>
         </div>
 
+        {/* Hata Mesajı Kutusu */}
+        {errorMessage && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold animate-in fade-in">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Sekme Geçişi */}
         <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
           <button
+            type="button"
             onClick={() => setMode('login')}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'login'
@@ -77,6 +107,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }) {
             Giriş Yap
           </button>
           <button
+            type="button"
             onClick={() => setMode('register')}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'register'
@@ -108,15 +139,15 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }) {
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">E-posta</label>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">E-posta veya Kullanıcı Adı</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ornek@cinepick.com"
+                placeholder="ornek@cinepick.com veya sinemasever"
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-rose-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
               />
             </div>
