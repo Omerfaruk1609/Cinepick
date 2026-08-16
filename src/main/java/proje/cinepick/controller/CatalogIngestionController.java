@@ -25,8 +25,10 @@ public class CatalogIngestionController {
         ));
     }
 
-    @org.springframework.web.bind.annotation.GetMapping({"/bulk-import-5k", "/bulk-import-15k"})
-    @PostMapping({"/bulk-import-5k", "/bulk-import-15k"})
+    @org.springframework.web.bind.annotation.RequestMapping(
+            value = {"/bulk-import-5k", "/bulk-import-15k"},
+            method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST}
+    )
     public ResponseEntity<Map<String, String>> triggerBulkImport() {
         catalogIngestionService.triggerBulkImport15kAsync();
         return ResponseEntity.ok(Map.of(

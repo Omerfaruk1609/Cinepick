@@ -61,12 +61,16 @@ public class CatalogIngestionService {
 
     @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     public void autoSeedIfEmpty() {
-        long count = movieRepository.count();
-        if (count == 0) {
-            log.info("📢 Veritabanı boş tespit edildi (0 film). Arka planda 5.000 film kataloğu çekimi otomatik başlatılıyor...");
-            triggerBulkImport5kAsync();
-        } else {
-            log.info("Veritabanında halihazırda {} film mevcut.", count);
+        try {
+            long count = movieRepository.count();
+            if (count == 0) {
+                log.info("📢 Veritabanı boş tespit edildi (0 film). Arka planda 5.000 film kataloğu çekimi otomatik başlatılıyor...");
+                triggerBulkImport5kAsync();
+            } else {
+                log.info("Veritabanında halihazırda {} film mevcut.", count);
+            }
+        } catch (Throwable t) {
+            log.debug("Auto-seed check skipped (e.g. test environment / table not ready): {}", t.getMessage());
         }
     }
 

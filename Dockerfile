@@ -2,36 +2,9 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
-# Add Spring Milestone repository for Spring AI
-RUN mkdir -p /root/.m2 && cat > /root/.m2/settings.xml <<'EOF'
-<settings>
-  <profiles>
-    <profile>
-      <id>spring-milestones</id>
-      <repositories>
-        <repository>
-          <id>spring-milestones</id>
-          <url>https://repo.spring.io/milestone</url>
-          <snapshots><enabled>false</enabled></snapshots>
-        </repository>
-      </repositories>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>spring-milestones</id>
-          <url>https://repo.spring.io/milestone</url>
-          <snapshots><enabled>false</enabled></snapshots>
-        </pluginRepository>
-      </pluginRepositories>
-    </profile>
-  </profiles>
-  <activeProfiles>
-    <activeProfile>spring-milestones</activeProfile>
-  </activeProfiles>
-</settings>
-EOF
-
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN mvn dependency:resolve -B || true
+
 COPY src ./src
 RUN mvn clean package -DskipTests -B && cp target/cinepick-*.jar /app/app.jar
 
