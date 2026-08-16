@@ -252,7 +252,7 @@ class SearchQualityTest extends BaseIntegrationTest {
         m.setGenres(genres);
         m.setVoteAverage(vote);
         m.setVoteCount(100_000L);
-        m.setReleaseDate("2020-01-01");
+        m.setReleaseDate(java.time.LocalDate.parse("2020-01-01"));
         m.setPosterPath("/placeholder.jpg");
         return m;
     }

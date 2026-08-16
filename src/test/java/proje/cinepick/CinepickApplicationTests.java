@@ -14,7 +14,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
     "spring.datasource.username=sa",
     "spring.datasource.password=",
     "spring.flyway.enabled=false",
-    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.hibernate.ddl-auto=none",
     "spring.ai.openai.api-key=dummy-test-key-123456789",
     "spring.data.redis.repositories.enabled=false",
     "spring.cache.type=none"
@@ -43,10 +43,16 @@ class CinepickApplicationTests {
     private org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
 
     @MockBean
-    private RedisConnectionFactory redisConnectionFactory;
+    private org.springframework.data.redis.connection.RedisConnectionFactory redisConnectionFactory;
 
     @MockBean
-    private ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
+    private org.springframework.data.redis.connection.ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
+
+    @MockBean
+    private proje.cinepick.bootstrap.DatabaseMovieCatalogSeeder databaseMovieCatalogSeeder;
+
+    @MockBean
+    private proje.cinepick.job.MovieEmbeddingIngestionJob movieEmbeddingIngestionJob;
 
     @Test
     void contextLoads() {
