@@ -25,6 +25,9 @@ public class UserInteractionController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody InteractionRequest request) {
 
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         interactionService.updateInteraction(userDetails.getUsername(), request);
         return ResponseEntity.ok().build();
     }
@@ -34,6 +37,9 @@ public class UserInteractionController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody List<OnboardingRatingRequest> ratings) {
 
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         interactionService.saveOnboardingRatings(userDetails.getUsername(), ratings);
         return ResponseEntity.ok().build();
     }
@@ -41,12 +47,18 @@ public class UserInteractionController {
     // Kullanıcının Favori Filmleri
     @GetMapping("/favorites")
     public ResponseEntity<List<MovieDto>> getFavorites(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(interactionService.getUserFavorites(userDetails.getUsername()));
     }
 
     // Kullanıcının İzleme Listesi
     @GetMapping("/watchlist")
     public ResponseEntity<List<MovieDto>> getWatchlist(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(interactionService.getUserWatchlist(userDetails.getUsername()));
     }
 }

@@ -137,7 +137,7 @@ public class UserInteractionService {
                 .title(movie.getTitle())
                 .overview(movie.getOverview())
                 .posterPath(movie.getPosterPath())
-                .releaseDate(movie.getReleaseDate())
+                .releaseDate(movie.getReleaseDate() != null ? movie.getReleaseDate().toString() : null)
                 .voteAverage(movie.getVoteAverage())
                 .build();
     }

@@ -91,7 +91,10 @@ public class MovieSearchRepository {
         movie.setTitle(rs.getString("title"));
         movie.setOverview(rs.getString("overview"));
         movie.setPosterPath(rs.getString("poster_path"));
-        movie.setReleaseDate(rs.getString("release_date"));
+        java.sql.Date sqlDate = rs.getDate("release_date");
+        if (sqlDate != null) {
+            movie.setReleaseDate(sqlDate.toLocalDate());
+        }
         movie.setVoteAverage(rs.getDouble("vote_average"));
         movie.setDirector(rs.getString("director"));
         movie.setVoteCount(rs.getLong("vote_count"));

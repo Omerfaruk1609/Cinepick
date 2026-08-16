@@ -1,4 +1,5 @@
 -- Movie Embedding Tablosu (pgvector entegrasyonu)
+CREATE EXTENSION IF NOT EXISTS vector;
 ALTER TABLE movies ADD COLUMN IF NOT EXISTS embedding vector(1536);
 
 -- Kullanıcı Etkileşimleri (Watchlist / Favorites / Ratings)
@@ -10,6 +11,7 @@ CREATE TABLE user_movie_interactions (
     in_watchlist BOOLEAN DEFAULT FALSE,
     rating DOUBLE PRECISION,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_user_movie UNIQUE (user_id, movie_id)
 );
 

@@ -48,7 +48,7 @@ public class ResilientTmdbService {
                 .build();
     }
 
-    @Cacheable(value = "tmdb_providers", key = "#tmdbMovieId")
+    @Cacheable(value = "tmdb_providers", key = "#tmdbMovieId", unless = "#result == null")
     public proje.cinepick.dto.tmdb.TmdbWatchProviderResponse.CountryProviders getTurkeyWatchProviders(Long tmdbMovieId) {
         String url = String.format("%s/movie/%d/watch/providers?api_key=%s", 
                 tmdbApiUrl, tmdbMovieId, tmdbApiKey);

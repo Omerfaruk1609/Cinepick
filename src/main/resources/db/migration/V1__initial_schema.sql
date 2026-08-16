@@ -4,10 +4,12 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Kullanıcılar Tablosu
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(255),
-    role VARCHAR(50) DEFAULT 'USER',
+    role VARCHAR(50) NOT NULL DEFAULT 'USER',
+    has_completed_onboarding BOOLEAN NOT NULL DEFAULT FALSE,
+    user_vector vector(1536),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

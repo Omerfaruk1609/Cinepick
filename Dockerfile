@@ -33,13 +33,13 @@ EOF
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 COPY src ./src
-RUN mvn clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B && cp target/cinepick-*.jar /app/app.jar
 
 # Stage 2: Lightweight runtime stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /app/app.jar app.jar
 USER appuser
 EXPOSE 8080
 

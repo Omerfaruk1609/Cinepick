@@ -1,0 +1,15 @@
+target
+.git
+.gitignore
+.env
+.env.production
+.idea
+.vscode
+.settings
+.classpath
+.project
+cinepick/node_modules
+cinepick/dist
+frontend
+backend
+*.log

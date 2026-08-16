@@ -80,15 +80,15 @@ jobs:
 
           # Wait for services to become healthy
           echo "Waiting for postgres and redis to be healthy..."
-          for i in $(seq 1 12); do
+          for i in $(seq 1 15); do
             POSTGRES_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cinepick_postgres 2>/dev/null || echo "starting")
             REDIS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cinepick_redis 2>/dev/null || echo "starting")
-            echo "  postgres=$POSTGRES_HEALTH  redis=$REDIS_HEALTH  (attempt $i/12)"
+            echo "  postgres=$POSTGRES_HEALTH  redis=$REDIS_HEALTH  (attempt $i/15)"
             if [ "$POSTGRES_HEALTH" = "healthy" ] && [ "$REDIS_HEALTH" = "healthy" ]; then
               echo "All services healthy!"
               break
             fi
-            sleep 5
+            sleep 4
           done
 
           docker compose -f docker-compose.yml ps
