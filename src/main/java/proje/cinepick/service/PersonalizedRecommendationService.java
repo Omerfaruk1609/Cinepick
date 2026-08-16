@@ -7,9 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import proje.cinepick.dto.MovieDto;
+import proje.cinepick.dto.MovieFilterRequest;
 import proje.cinepick.entity.Movie;
 import proje.cinepick.entity.UserBlacklist;
 import proje.cinepick.repository.MovieRepository;
+import proje.cinepick.util.VectorMathUtil;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -94,8 +96,8 @@ public class PersonalizedRecommendationService {
 
         // 4. Kullanıcı Kara Listesini Çek
         UserBlacklist blacklist = blacklistService.getBlacklist(userId);
-        String[] excludedGenres = blacklist.getExcludedGenres();
-        String[] excludedDirectors = blacklist.getExcludedDirectors();
+        String[] excludedGenres = blacklist != null ? blacklist.getExcludedGenres() : null;
+        String[] excludedDirectors = blacklist != null ? blacklist.getExcludedDirectors() : null;
 
         // 5. pgvector Hibrit Sorgusu + Kara Liste Filtreleri
         List<String> safeGenres = favoriteGenres != null ? favoriteGenres : List.of();
@@ -112,7 +114,7 @@ public class PersonalizedRecommendationService {
 
         List<MovieDto> dtoList = enrichMoviesWithMatchScore(recommendedMovies, userVector, safeGenres);
 
-        // 5. Sonuçları 1 Saatliğine Redis'e Kaydet
+        // 6. Sonuçları 1 Saatliğine Redis'e Kaydet
         try {
             redisTemplate.opsForValue().set(cacheKey, dtoList, Duration.ofHours(1));
         } catch (Exception e) {
@@ -122,9 +124,65 @@ public class PersonalizedRecommendationService {
         return dtoList;
     }
 
+    public List<MovieDto> filterMovies(Long userId, MovieFilterRequest request) {
+        if (request == null) {
+            request = new MovieFilterRequest();
+        }
+
+        int limit = (request.getLimit() != null && request.getLimit() > 0) ? request.getLimit() : 50;
+        int page = (request.getPage() != null && request.getPage() >= 0) ? request.getPage() : 0;
+        int offset = page * limit;
+
+        float[] userVector = null;
+        if (userId != null) {
+            userVector = userVectorService.getUserVectorWithCache(userId);
+        }
+
+        String vectorString = userVector != null ? Arrays.toString(userVector) : null;
+        String[] genreArray = (request.getGenres() != null && !request.getGenres().isEmpty())
+                ? request.getGenres().toArray(new String[0])
+                : null;
+        String platform = request.getPlatform();
+        if (platform == null && request.getPlatforms() != null && !request.getPlatforms().isEmpty()) {
+            platform = request.getPlatforms().get(0);
+        }
+
+        List<Movie> filteredMovies = movieRepository.filterMovies(
+                vectorString,
+                genreArray,
+                request.getOriginalLanguage(),
+                request.getMinYear(),
+                request.getMaxYear(),
+                request.getMinRating(),
+                request.getMaxRuntime(),
+                platform,
+                limit,
+                offset
+        );
+
+        final float[] finalUserVector = userVector;
+        final List<String> safeGenres = request.getGenres() != null ? request.getGenres() : List.of();
+
+        return filteredMovies.stream().map(movie -> {
+            MovieDto dto = MovieDto.fromEntity(movie);
+            if (finalUserVector != null && movie.getEmbedding() != null) {
+                double similarity = VectorMathUtil.cosineSimilarity(finalUserVector, movie.getEmbedding());
+                boolean genreMatch = movie.getGenres() != null && safeGenres.stream()
+                        .anyMatch(g -> Arrays.asList(movie.getGenres()).contains(g));
+                int matchPercentage = matchCalculatorService.calculateMatchPercentage(
+                        similarity,
+                        genreMatch,
+                        movie.getVoteAverage()
+                );
+                dto.setMatchPercentage(matchPercentage);
+            }
+            return dto;
+        }).toList();
+    }
+
     public List<MovieDto> enrichMoviesWithMatchScore(List<Movie> movies, float[] userVector, List<String> favoriteGenres) {
         return movies.stream().map(movie -> {
-            double similarity = proje.cinepick.util.VectorMathUtil.cosineSimilarity(userVector, movie.getEmbedding());
+            double similarity = VectorMathUtil.cosineSimilarity(userVector, movie.getEmbedding());
             boolean genreMatch = movie.getGenres() != null && favoriteGenres.stream()
                     .anyMatch(g -> Arrays.asList(movie.getGenres()).contains(g));
 
@@ -150,9 +208,8 @@ public class PersonalizedRecommendationService {
     }
 
     private List<MovieDto> getFallbackPopularMovies(int limit) {
-        return movieRepository.findTop10ByOrderByVoteAverageDesc()
+        return movieRepository.findPopularMovies(limit)
                 .stream()
-                .limit(limit)
                 .map(MovieDto::fromEntity)
                 .toList();
     }

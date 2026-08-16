@@ -2,15 +2,75 @@ package proje.cinepick.util;
 
 public class VectorMathUtil {
 
+    /**
+     * Vector addition of two float arrays.
+     */
+    public static float[] addVectors(float[] v1, float[] v2) {
+        if (v1 == null && v2 == null) return null;
+        if (v1 == null) return v2.clone();
+        if (v2 == null) return v1.clone();
+        int len = Math.min(v1.length, v2.length);
+        float[] result = new float[len];
+        for (int i = 0; i < len; i++) {
+            result[i] = v1[i] + v2[i];
+        }
+        return result;
+    }
+
+    /**
+     * Multiplies a vector by a scalar float.
+     */
+    public static float[] scalarMultiply(float[] vector, float scalar) {
+        if (vector == null) return null;
+        float[] result = new float[vector.length];
+        for (int i = 0; i < vector.length; i++) {
+            result[i] = vector[i] * scalar;
+        }
+        return result;
+    }
+
+    /**
+     * Normalizes a vector using L2 norm.
+     */
+    public static float[] normalizeL2(float[] vector) {
+        if (vector == null) return null;
+        double sumSquares = 0.0;
+        for (float val : vector) {
+            sumSquares += val * val;
+        }
+        double magnitude = Math.sqrt(sumSquares);
+        float[] normalized = new float[vector.length];
+        if (magnitude > 0) {
+            for (int i = 0; i < vector.length; i++) {
+                normalized[i] = (float) (vector[i] / magnitude);
+            }
+        }
+        return normalized;
+    }
+
+    /**
+     * Time-decay weighting formula: w_i = e^(-lambda * delta_t_days)
+     *
+     * @param daysDiff difference in days between interaction time and current time
+     * @param lambda decay rate parameter (e.g. 0.01)
+     * @return time decay weight factor
+     */
+    public static float calculateTimeDecayWeight(double daysDiff, double lambda) {
+        if (daysDiff < 0) daysDiff = 0;
+        return (float) Math.exp(-lambda * daysDiff);
+    }
+
+    /**
+     * Calculates the weighted centroid of multiple vectors and applies L2 normalization.
+     */
     public static float[] calculateWeightedCentroid(float[][] vectors, float[] weights) {
         if (vectors == null || vectors.length == 0 || vectors[0] == null) {
             return null;
         }
 
-        int dimension = vectors[0].length; // pgvector varsayılan boyutu (1536)
+        int dimension = vectors[0].length;
         float[] centroid = new float[dimension];
 
-        // 1. Ağırlıklı Toplam
         for (int i = 0; i < vectors.length; i++) {
             float weight = weights[i];
             float[] vector = vectors[i];
@@ -20,22 +80,12 @@ public class VectorMathUtil {
             }
         }
 
-        // 2. Normalizasyon (L2 Norm)
-        float sumSquares = 0.0f;
-        for (float val : centroid) {
-            sumSquares += val * val;
-        }
-        float magnitude = (float) Math.sqrt(sumSquares);
-
-        if (magnitude > 0) {
-            for (int d = 0; d < dimension; d++) {
-                centroid[d] /= magnitude;
-            }
-        }
-
-        return centroid;
+        return normalizeL2(centroid);
     }
 
+    /**
+     * Calculates Cosine Similarity between two vectors and maps result to range [0.0, 1.0].
+     */
     public static double cosineSimilarity(float[] v1, float[] v2) {
         if (v1 == null || v2 == null || v1.length == 0 || v2.length == 0) {
             return 0.5;
