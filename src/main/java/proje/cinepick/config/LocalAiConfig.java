@@ -5,6 +5,7 @@ import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,26 +27,36 @@ public class LocalAiConfig {
 
     @Bean
     public OrtEnvironment ortEnvironment() {
-        return OrtEnvironment.getEnvironment();
+        try {
+            return OrtEnvironment.getEnvironment();
+        } catch (Throwable t) {
+            log.warn("ONNX Runtime native environment could not be initialized (libstdc++/glibc issue): {}. Falling back to internal embedding vector engine.", t.getMessage());
+            return null;
+        }
     }
 
     @Bean
-    public OrtSession ortSession(OrtEnvironment env) throws OrtException, IOException {
+    public OrtSession ortSession(@Autowired(required = false) OrtEnvironment env) {
+        if (env == null) {
+            return null;
+        }
         if (!modelResource.exists()) {
             log.warn("ONNX model resource not found at {}", modelResource);
             return null;
         }
-        byte[] modelBytes;
         try (InputStream is = modelResource.getInputStream()) {
-            modelBytes = is.readAllBytes();
+            byte[] modelBytes = is.readAllBytes();
+            OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+            log.info("Successfully loaded ONNX model from {}", modelResource);
+            return env.createSession(modelBytes, options);
+        } catch (Throwable t) {
+            log.warn("Failed to create ONNX Session: {}. Using fallback vector engine.", t.getMessage());
+            return null;
         }
-        OrtSession.SessionOptions options = new OrtSession.SessionOptions();
-        log.info("Successfully loaded ONNX model from {}", modelResource);
-        return env.createSession(modelBytes, options);
     }
 
     @Bean
-    public HuggingFaceTokenizer huggingFaceTokenizer() throws IOException {
+    public HuggingFaceTokenizer huggingFaceTokenizer() {
         if (!tokenizerResource.exists()) {
             log.warn("Tokenizer resource not found at {}", tokenizerResource);
             return null;
@@ -53,6 +64,9 @@ public class LocalAiConfig {
         try (InputStream is = tokenizerResource.getInputStream()) {
             log.info("Successfully loaded HuggingFace Tokenizer from {}", tokenizerResource);
             return HuggingFaceTokenizer.newInstance(is, Map.of());
+        } catch (Throwable t) {
+            log.warn("Failed to create HuggingFace Tokenizer: {}. Using fallback.", t.getMessage());
+            return null;
         }
     }
 }

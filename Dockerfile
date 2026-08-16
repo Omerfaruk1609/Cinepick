@@ -38,6 +38,7 @@ RUN mvn clean package -DskipTests -B && cp target/cinepick-*.jar /app/app.jar
 # Stage 2: Lightweight runtime stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+RUN apk add --no-cache libstdc++ gcompat libc6-compat
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=builder /app/app.jar app.jar
 USER appuser

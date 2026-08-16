@@ -21,7 +21,7 @@ public class LocalEmbeddingService {
     private final HuggingFaceTokenizer tokenizer;
 
     @Autowired
-    public LocalEmbeddingService(OrtEnvironment ortEnvironment,
+    public LocalEmbeddingService(@Autowired(required = false) OrtEnvironment ortEnvironment,
                                  @Autowired(required = false) OrtSession ortSession,
                                  @Autowired(required = false) HuggingFaceTokenizer tokenizer) {
         this.ortEnvironment = ortEnvironment;
