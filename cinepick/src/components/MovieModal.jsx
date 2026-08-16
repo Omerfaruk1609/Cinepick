@@ -56,10 +56,10 @@ export default function MovieModal({
             setInsight(insightRes);
             if (insightRes) {
               setSmartSummary({
-                thirtySecondOverview: insightRes.quickHook || currentMovieData.overview,
-                keyHighlights: insightRes.atmosphereTags || [],
-                forWhom: insightRes.targetAudience ? [insightRes.targetAudience, insightRes.whyToWatch] : [insightRes.whyToWatch],
-                notForWhom: insightRes.dealBreakers ? [insightRes.dealBreakers] : ['Hızlı, aksiyon dolu popüler film arayanlar']
+                thirtySecondOverview: insightRes.quickHook || (currentMovieData.overview ? currentMovieData.overview.slice(0, 160) + '...' : 'Seçkin sinematik anlatım ve zengin kurgu.'),
+                keyHighlights: [insightRes.atmosphere, insightRes.narrativePace].filter(Boolean),
+                forWhom: insightRes.targetAudience ? [insightRes.targetAudience] : ['Kaliteli sinematografi ve dengeli tempo arayan sinemaseverler'],
+                notForWhom: insightRes.notForAudience ? [insightRes.notForAudience] : ['Hafif, kafa yormayan çerezlik yapım arayanlar']
               });
             }
           }
@@ -73,7 +73,17 @@ export default function MovieModal({
           const fallbackMovie = movie || {};
           setDetails(fallbackMovie);
           fetchMovieInsight(fallbackMovie).then((res) => {
-            if (isMounted) setInsight(res);
+            if (isMounted) {
+              setInsight(res);
+              if (res) {
+                setSmartSummary({
+                  thirtySecondOverview: res.quickHook || (fallbackMovie.overview ? fallbackMovie.overview.slice(0, 160) + '...' : ''),
+                  keyHighlights: [res.atmosphere, res.narrativePace].filter(Boolean),
+                  forWhom: res.targetAudience ? [res.targetAudience] : ['Sinemaseverler'],
+                  notForWhom: res.notForAudience ? [res.notForAudience] : ['Çerezlik yapım arayanlar']
+                });
+              }
+            }
           });
           setLoading(false);
         }
@@ -100,29 +110,26 @@ export default function MovieModal({
   const inWatchlist = isInWatchlist ? isInWatchlist(currentMovie.id) : false;
   const inWatched = isWatched ? isWatched(currentMovie.id) : false;
 
-  const backdropUrl = currentMovie.backdrop_path
-    ? currentMovie.backdrop_path.startsWith('http')
-      ? currentMovie.backdrop_path
-      : `${BACKDROP_IMAGE_BASE_URL}${currentMovie.backdrop_path}`
-    : currentMovie.poster_path
-    ? currentMovie.poster_path.startsWith('http')
-      ? currentMovie.poster_path
-      : `${IMAGE_BASE_URL}${currentMovie.poster_path}`
+  const rawPoster = currentMovie.poster_path || currentMovie.posterPath;
+  const posterUrl = rawPoster
+    ? rawPoster.startsWith('http')
+      ? rawPoster
+      : `${IMAGE_BASE_URL}${rawPoster}`
     : null;
 
-  const posterUrl = currentMovie.poster_path
-    ? currentMovie.poster_path.startsWith('http')
-      ? currentMovie.poster_path
-      : `${IMAGE_BASE_URL}${currentMovie.poster_path}`
-    : null;
+  const rawBackdrop = currentMovie.backdrop_path || currentMovie.backdropPath;
+  const backdropUrl = rawBackdrop
+    ? rawBackdrop.startsWith('http')
+      ? rawBackdrop
+      : `${BACKDROP_IMAGE_BASE_URL}${rawBackdrop}`
+    : posterUrl;
 
-  const director = credits?.crew?.find(c => c.job === 'Director')?.name || 'Bilinmiyor';
+  const director = currentMovie.director || credits?.crew?.find(c => c.job === 'Director')?.name || 'Bilinmiyor';
   const writer = credits?.crew?.find(c => c.job === 'Writer' || c.job === 'Screenplay' || c.job === 'Story')?.name || 'Bilinmiyor';
   const topCast = credits?.slice ? credits.slice(0, 5) : credits?.cast?.slice(0, 5) || [];
 
-  const releaseYear = currentMovie.release_date
-    ? new Date(currentMovie.release_date).getFullYear()
-    : 'N/A';
+  const releaseYear = currentMovie.releaseYear || currentMovie.release_year || (currentMovie.release_date ? new Date(currentMovie.release_date).getFullYear() : 'N/A');
+  const rating = currentMovie.vote_average ?? currentMovie.voteAverage;
 
   const formattedTime = formatRuntime(currentMovie.runtime);
 
@@ -254,7 +261,7 @@ export default function MovieModal({
 
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 dark:text-amber-400 font-bold">
                   <Star className="w-4 h-4 fill-amber-400" />
-                  <span>{currentMovie.vote_average ? Number(currentMovie.vote_average).toFixed(1) : 'N/A'}</span>
+                  <span>{rating ? Number(rating).toFixed(1) : 'N/A'}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">

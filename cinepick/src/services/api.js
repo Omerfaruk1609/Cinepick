@@ -1,21 +1,35 @@
 import axios from 'axios';
-import { analyzeNarrative as analyzeNarrativeJS } from '../utils/narrativeEngine';
+import apiClient from './apiClient';
 
 export const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 export const BACKDROP_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w1280';
 
-// Açık, kayıtsız ve API Key gerektirmeyen Public JSON Veri Kaynakları
-const PUBLIC_API_CATEGORIES = [
-  { category: 'classic', genreId: 18, genreName: 'Drama' },
-  { category: 'drama', genreId: 18, genreName: 'Drama' },
-  { category: 'animation', genreId: 16, genreName: 'Animasyon' },
-  { category: 'action-adventure', genreId: 28, genreName: 'Aksiyon' },
-  { category: 'family', genreId: 10751, genreName: 'Aile' },
-  { category: 'mystery', genreId: 9648, genreName: 'Gizem' },
-  { category: 'horror', genreId: 27, genreName: 'Korku' },
-  { category: 'comedy', genreId: 35, genreName: 'Komedi' },
-  { category: 'scifi-fantasy', genreId: 878, genreName: 'Bilim Kurgu' }
-];
+// TMDB Genre Id to Genre Name Mapping
+export const GENRE_MAP = {
+  28: 'Aksiyon',
+  12: 'Macera',
+  16: 'Animasyon',
+  35: 'Komedi',
+  80: 'Suç',
+  99: 'Belgesel',
+  18: 'Dram',
+  10751: 'Aile',
+  14: 'Fantezi',
+  36: 'Tarih',
+  27: 'Korku',
+  10402: 'Müzik',
+  9648: 'Gizem',
+  10749: 'Romantik',
+  878: 'Bilim Kurgu',
+  53: 'Gerilim',
+  10752: 'Savaş',
+  37: 'Vahşi Batı'
+};
+
+export const cleanTitle = (title) => {
+  if (!title || typeof title !== 'string') return title || '';
+  return title.replace(/\s+(Vol\.\s*\d+|\d+)$/i, '').trim();
+};
 
 export const formatRuntime = (minutes) => {
   if (!minutes || minutes <= 0) return 'Bilinmiyor';
@@ -25,133 +39,176 @@ export const formatRuntime = (minutes) => {
   return mins > 0 ? `${hours}s ${mins}dk` : `${hours}s`;
 };
 
-// Önbellek için birleştirilmiş film havuzu
-let cachedMoviePool = null;
-
-export const fetchAllPublicMovies = async () => {
-  if (cachedMoviePool && cachedMoviePool.length > 0) {
-    return cachedMoviePool;
+// 1. Popüler & Öne Çıkan Filmler (5.000+ Gerçek Film Veritabanından)
+export const getPopularMovies = async (limit = 5000, page = 0) => {
+  try {
+    const response = await apiClient.get(`/v1/movies/popular?limit=${limit}&page=${page}`);
+    if (Array.isArray(response.data) && response.data.length > 0) {
+      return response.data;
+    }
+  } catch (error) {
+    console.error('getPopularMovies API error:', error);
   }
 
+  // Backend fallback filter
   try {
-    const promises = PUBLIC_API_CATEGORIES.map(async ({ category, genreId, genreName }) => {
-      try {
-        const res = await axios.get(`https://api.sampleapis.com/movies/${category}`, { timeout: 3500 });
-        if (Array.isArray(res.data)) {
-          return res.data.map(item => ({
-            id: item.id ? (genreId * 1000 + item.id) : Math.floor(Math.random() * 1000000),
-            tmdbId: item.id || Math.floor(Math.random() * 1000000),
-            title: item.title || 'İsimsiz Sinema Eseri',
-            poster_path: item.posterURL && item.posterURL.startsWith('http') ? item.posterURL : null,
-            backdrop_path: item.posterURL && item.posterURL.startsWith('http') ? item.posterURL : null,
-            vote_average: (7.2 + (item.id % 25) * 0.1).toFixed(1),
-            overview: `${item.title} — Sinema dünyasının öne çıkan ${genreName.toLowerCase()} eserlerinden biri. Özgün kurgusu ve anlatısıyla dikkat çekiyor.`,
-            release_date: `${1970 + (item.id % 50)}-05-15`,
-            runtime: 90 + (item.id % 60),
-            original_language: 'en',
-            genre_ids: [genreId],
-            genres: [{ id: genreId, name: genreName }]
-          }));
-        }
-      } catch (e) {
-        return [];
-      }
-      return [];
-    });
-
-    const results = await Promise.all(promises);
-    const flattened = results.flat();
-    
-    // Yinelenen filmleri temizle
-    const uniqueMap = new Map();
-    flattened.forEach(movie => {
-      if (movie.title && !uniqueMap.has(movie.title.toLowerCase())) {
-        uniqueMap.set(movie.title.toLowerCase(), movie);
-      }
-    });
-
-    cachedMoviePool = Array.from(uniqueMap.values());
-    console.log(`🎥 Toplam Açık Verisetinden Yüklenen Film Sayısı: ${cachedMoviePool.length}`);
-    return cachedMoviePool;
-  } catch (error) {
-    console.error('Public filmler yüklenirken hata:', error);
+    const fallbackRes = await apiClient.post('/v1/movies/filter', { limit, page });
+    return fallbackRes.data || [];
+  } catch (e) {
     return [];
   }
 };
 
-// Popüler Filmler
-export const getPopularMovies = async () => {
-  const movies = await fetchAllPublicMovies();
-  return movies; // Tüm açık katalog filmlerini döndür
-};
-
-// Tür Filtreleme
-export const getMoviesByGenre = async (genreIds = []) => {
-  const allMovies = await fetchAllPublicMovies();
+// 2. Tür Filtreleme (15.000+ Gerçek Film İçerisinden)
+export const getMoviesByGenre = async (genreIds = [], limit = 15000, page = 0) => {
   if (!genreIds || genreIds.length === 0 || genreIds.includes(0)) {
-    return allMovies;
+    return getPopularMovies(limit, page);
   }
 
-  const targetIds = Array.isArray(genreIds) ? genreIds.map(Number) : [Number(genreIds)];
-  
-  const filtered = allMovies.filter(movie => {
-    if (!movie.genre_ids) return false;
-    return targetIds.some(id => movie.genre_ids.includes(id));
-  });
+  const genreNames = Array.isArray(genreIds)
+    ? genreIds.map(id => typeof id === 'number' ? GENRE_MAP[id] || String(id) : id).filter(Boolean)
+    : [typeof genreIds === 'number' ? GENRE_MAP[genreIds] : genreIds];
 
-  return filtered.length > 0 ? filtered : allMovies.slice(0, 30);
+  try {
+    const response = await apiClient.post('/v1/movies/filter', {
+      genres: genreNames,
+      limit,
+      page
+    });
+    return response.data || [];
+  } catch (error) {
+    console.error('getMoviesByGenre API error:', error);
+    return [];
+  }
 };
 
-// Film Detayları
+// 3. Genel Arama (Keyword / Semantic / Hybrid)
+export const searchMovies = async (query, limit = 50, page = 0) => {
+  if (!query || !query.trim()) {
+    return getPopularMovies(limit, page);
+  }
+
+  try {
+    const response = await apiClient.get(`/v1/movies/search?q=${encodeURIComponent(query.trim())}&size=${limit}&page=${page}&mode=hybrid`);
+    if (response.data && response.data.movies) {
+      return response.data.movies;
+    }
+  } catch (error) {
+    console.error('searchMovies API error, falling back to intent discovery:', error);
+  }
+
+  try {
+    const intentRes = await apiClient.post('/v1/movies/intent-discovery', { query: query.trim(), limit });
+    return intentRes.data || [];
+  } catch (e) {
+    return [];
+  }
+};
+
+// 4. Hibrit Filtreleme (Platform, Tür, Dil, Yıl, Süre, Puan)
+export const filterMovies = async (filterData, userId = null) => {
+  try {
+    const response = await apiClient.post(`/v1/movies/filter${userId ? `?userId=${userId}` : ''}`, filterData);
+    return response.data || [];
+  } catch (error) {
+    console.error('Filter movies API error:', error);
+    return [];
+  }
+};
+
+// 5. İnteraktif AI Film Sihirbazı (Questionnaire Wizard)
+export const getWizardRecommendations = async (wizardData) => {
+  try {
+    const response = await apiClient.post('/v1/movies/wizard-discovery', wizardData);
+    return response.data || [];
+  } catch (error) {
+    console.error('Wizard recommendations API error:', error);
+    return [];
+  }
+};
+
+// 6. Ruh Hali Önerileri (Mood-Based Recommendations)
+export const getMoodRecommendations = async (moodData) => {
+  try {
+    const response = await apiClient.post('/v1/movies/mood-recommendation', moodData);
+    return response.data || [];
+  } catch (error) {
+    console.error('Mood recommendations API error:', error);
+    return [];
+  }
+};
+
+// 7. Niyet Bazlı Keşif (Intent-Based Discovery)
+export const discoverByIntent = async (prompt, limit = 20) => {
+  try {
+    const payload = typeof prompt === 'string' ? { query: prompt, limit } : prompt;
+    const response = await apiClient.post('/v1/movies/intent-discovery', payload);
+    return response.data || [];
+  } catch (error) {
+    console.error('Intent discovery API error:', error);
+    return [];
+  }
+};
+
+// 8. Kişiselleştirilmiş Öneriler
+export const getPersonalizedRecommendations = async (genres = null, limit = 10) => {
+  try {
+    const params = new URLSearchParams();
+    if (genres && genres.length > 0) {
+      params.append('genres', genres.join(','));
+    }
+    params.append('limit', limit);
+
+    const response = await apiClient.get(`/v1/recommendations/personalized?${params.toString()}`);
+    return response.data || [];
+  } catch (error) {
+    console.error('Personalized recommendations API error:', error);
+    return [];
+  }
+};
+
+// 9. Film Detayları
 export const getMovieDetails = async (movieId, initialMovieData = null) => {
   if (initialMovieData && initialMovieData.title) {
-    return {
-      ...initialMovieData,
-      runtime: initialMovieData.runtime || 120,
-      genres: initialMovieData.genres || [{ id: 18, name: 'Drama' }]
-    };
+    return initialMovieData;
   }
-
-  const allMovies = await fetchAllPublicMovies();
-  const found = allMovies.find(m => String(m.id) === String(movieId));
-  if (found) return found;
-
   return {
     id: movieId,
     title: 'Sinematik Film Eseri',
     overview: 'Bu film hakkında sinematik inceleme ve atmosfer bilgileri.',
-    release_date: '2022-10-15',
+    release_date: '2023-01-01',
     runtime: 120,
     vote_average: 8.0,
-    original_language: 'en',
-    genres: [{ id: 18, name: 'Drama' }],
-    poster_path: null,
-    backdrop_path: null
+    original_language: 'tr',
+    genres: ['Dram'],
+    poster_path: null
   };
 };
 
-// Oyuncu Kadrosu
 export const getMovieCredits = async (movieId) => {
-  return {
-    cast: [],
-    crew: []
-  };
+  return { cast: [], crew: [] };
 };
 
-// YouTube Fragmanı
 export const getMovieVideos = async (movieId) => {
   return null;
 };
 
-// Arama Yap
-export const searchMovies = async (query) => {
-  if (!query || query.trim().length === 0) return getPopularMovies();
-  const allMovies = await fetchAllPublicMovies();
-  const lowerQ = query.toLowerCase();
-  return allMovies.filter(m => m.title && m.title.toLowerCase().includes(lowerQ));
+export const getMovieWatchProviders = async (movieId) => {
+  try {
+    const res = await apiClient.get(`/v1/movies/${movieId}/watch-providers`);
+    return res.data;
+  } catch (e) {
+    return null;
+  }
 };
 
-// Türkiye Yayın Hakları
-export const getMovieWatchProviders = async (movieId) => {
-  return null;
+// 10. Admin: 5.000+ Film Toplu Çekim Tetikleme
+export const bulkImport5kMovies = async () => {
+  try {
+    const response = await apiClient.post('/admin/catalog/bulk-import-5k');
+    return response.data;
+  } catch (error) {
+    console.error('Bulk import API error:', error);
+    return { status: 'error', message: error.message };
+  }
 };

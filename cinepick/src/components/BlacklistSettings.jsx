@@ -10,7 +10,9 @@ const BlacklistSettings = () => {
 
   useEffect(() => {
     let isMounted = true;
-    apiClient.get('/users/blacklist')
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    apiClient.get('/v1/users/blacklist')
       .then(res => {
         if (isMounted && res.data && res.data.excludedGenres) {
           setExcludedGenres(res.data.excludedGenres);
@@ -34,7 +36,10 @@ const BlacklistSettings = () => {
       setExcludedGenres(updated);
 
       // Backend'e kara liste güncellemesi gönder
-      await apiClient.post('/users/blacklist/genres', { excludedGenres: updated });
+      const token = localStorage.getItem('token');
+      if (token) {
+        await apiClient.post('/v1/users/blacklist/genres', { excludedGenres: updated });
+      }
     } catch (err) {
       console.error("Kara liste güncellenemedi:", err);
     } finally {

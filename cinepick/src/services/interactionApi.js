@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 
 export const updateInteraction = async (movieId, isFavorite, inWatchlist, rating = null) => {
-  const response = await apiClient.post('/users/interactions/toggle', {
+  const response = await apiClient.post('/v1/users/interactions/toggle', {
     movieId,
     isFavorite,
     inWatchlist,
@@ -11,17 +11,29 @@ export const updateInteraction = async (movieId, isFavorite, inWatchlist, rating
 };
 
 export const fetchFavorites = async () => {
-  const response = await apiClient.get('/users/interactions/favorites');
-  return response.data;
+  const token = localStorage.getItem('token');
+  if (!token) return [];
+  try {
+    const response = await apiClient.get('/v1/users/interactions/favorites');
+    return response.data || [];
+  } catch (err) {
+    return [];
+  }
 };
 
 export const fetchWatchlist = async () => {
-  const response = await apiClient.get('/users/interactions/watchlist');
-  return response.data;
+  const token = localStorage.getItem('token');
+  if (!token) return [];
+  try {
+    const response = await apiClient.get('/v1/users/interactions/watchlist');
+    return response.data || [];
+  } catch (err) {
+    return [];
+  }
 };
 
 export const processOnboarding = async (ratings) => {
-  const response = await apiClient.post('/users/interactions/onboarding', ratings);
+  const response = await apiClient.post('/v1/users/interactions/onboarding', ratings);
   return response.data;
 };
 
@@ -31,7 +43,7 @@ export const fetchPersonalizedRecommendations = async (genres = [], limit = 10) 
     if (genres && genres.length > 0) {
       params.genres = genres.join(',');
     }
-    const response = await apiClient.get('/recommendations/personalized', { params });
+    const response = await apiClient.get('/v1/recommendations/personalized', { params });
     return response.data;
   } catch (err) {
     console.warn("Kişiselleştirilmiş öneri çekme hatası:", err);
@@ -41,7 +53,7 @@ export const fetchPersonalizedRecommendations = async (genres = [], limit = 10) 
 
 export const fetchOnboardingPool = async () => {
   try {
-    const response = await apiClient.get('/movies/onboarding-pool');
+    const response = await apiClient.get('/v1/movies/onboarding-pool');
     return response.data;
   } catch (err) {
     console.warn("Backend onboarding pool çağrısı başarısız, varsayılan havuza geçiliyor:", err);

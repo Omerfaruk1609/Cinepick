@@ -12,14 +12,18 @@ export default function MovieCard({
   onToggleWatched,
   onClick,
 }) {
-  const posterUrl = movie.poster_path?.startsWith('http')
-    ? movie.poster_path
-    : movie.poster_path
-    ? `${IMAGE_BASE_URL}${movie.poster_path}`
+  const rawPoster = movie.poster_path || movie.posterPath;
+  const posterUrl = rawPoster?.startsWith('http')
+    ? rawPoster
+    : rawPoster
+    ? `${IMAGE_BASE_URL}${rawPoster}`
     : null;
 
   const matchPercentage = movie.matchPercentage || movie.match_percentage;
   const reason = movie.recommendationReason || movie.recommendation_reason;
+  const rating = movie.vote_average ?? movie.voteAverage;
+  const year = movie.releaseYear || movie.release_year || (movie.release_date ? movie.release_date.substring(0, 4) : null);
+  const platforms = movie.streamingPlatforms || movie.streaming_platforms;
 
   return (
     <div
@@ -102,8 +106,13 @@ export default function MovieCard({
         <div className="flex items-center justify-between mt-2">
           <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
             <Star className="w-3.5 h-3.5 fill-amber-400" />
-            {movie.vote_average ? Number(movie.vote_average).toFixed(1) : 'N/A'}
+            {rating ? Number(rating).toFixed(1) : 'N/A'}
           </span>
+          {year && (
+            <span className="text-xs text-slate-400 font-medium">
+              {year}
+            </span>
+          )}
           {isWatched ? (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
               İzlendi
@@ -114,6 +123,17 @@ export default function MovieCard({
             </span>
           ) : null}
         </div>
+
+        {/* Platform Rozeti */}
+        {platforms && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {platforms.split(',').slice(0, 2).map((p, idx) => (
+              <span key={idx} className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950/70 text-indigo-300 border border-indigo-800/40 truncate max-w-[120px]">
+                {p.trim()}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Explainable AI Gerekçe Kutusu */}
         {reason && <ReasonBadge reason={reason} />}

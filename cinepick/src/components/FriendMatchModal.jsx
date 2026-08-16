@@ -14,7 +14,7 @@ const FriendMatchModal = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get(`/users/friend-match?friendUsername=${encodeURIComponent(friendUsername.trim())}`);
+      const response = await apiClient.get(`/v1/users/friend-match?friendUsername=${encodeURIComponent(friendUsername.trim())}`);
       setMatchResult(response.data);
     } catch (err) {
       console.error("Eşleşme başarısız:", err);

@@ -8,7 +8,12 @@ const TasteAnalyticsPanel = () => {
 
   useEffect(() => {
     let isMounted = true;
-    apiClient.get('/users/analytics')
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    apiClient.get('/v1/users/analytics')
       .then((res) => {
         if (isMounted && res.data) setAnalytics(res.data);
       })

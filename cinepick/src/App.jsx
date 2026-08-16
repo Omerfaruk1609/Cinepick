@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getPopularMovies, getMoviesByGenre, searchMovies } from './services/api';
+import { getPopularMovies, getMoviesByGenre, searchMovies, filterMovies } from './services/api';
 import { useMovieLists } from './hooks/useMovieLists';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
@@ -16,9 +16,13 @@ import ProfileModal from './components/ProfileModal';
 import AuthModal from './components/AuthModal';
 import OnboardingModal from './components/OnboardingModal';
 import RecommenderBlock from './components/RecommenderBlock';
+import FilterPanel from './components/FilterPanel';
+import MovieWizardModal from './components/MovieWizardModal';
+import IntentDiscoveryModal from './components/IntentDiscoveryModal';
+import MoodSelectorModal from './components/MoodSelectorModal';
 import Footer from './components/Footer';
 
-import { Bookmark, CheckCircle2, Loader2, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bookmark, CheckCircle2, Loader2, Compass, ChevronLeft, ChevronRight, Wand2, Filter, Sparkles, Smile } from 'lucide-react';
 
 function App() {
   const [movies, setMovies] = useState([]);
@@ -31,6 +35,10 @@ function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isIntentOpen, setIsIntentOpen] = useState(false);
+  const [isMoodModalOpen, setIsMoodModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
@@ -182,6 +190,70 @@ function App() {
           {/* Keşfet Sekmesi: Öneri Bloğu, Mood Selector & Genre Slider */}
           {activeTab === 'explore' && !searchQuery && (
             <>
+              {/* Discovery Actions Toolbar */}
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsWizardOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-950/40 cursor-pointer transition-all active:scale-95"
+                >
+                  <Wand2 className="w-4 h-4 text-amber-300 animate-pulse" />
+                  <span>AI Film Sihirbazı</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                    isFilterOpen
+                      ? 'bg-rose-600 text-white border-rose-500 shadow-md'
+                      : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <Filter className="w-4 h-4 text-rose-400" />
+                  <span>Gelişmiş Filtreleme</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsIntentOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-rose-500/40 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-rose-400" />
+                  <span>Niyetle Keşfet</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMoodModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-rose-500/40 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Smile className="w-4 h-4 text-rose-400" />
+                  <span>Ruh Hali Keşfi</span>
+                </button>
+              </div>
+
+              {/* Filtre Paneli Açık Olduğunda */}
+              {isFilterOpen && (
+                <div className="mb-6 animate-fadeIn">
+                  <FilterPanel
+                    onFilterSubmit={async (filterData) => {
+                      setLoading(true);
+                      try {
+                        const results = await filterMovies(filterData, user?.id);
+                        setMovies(results || []);
+                        setCurrentPage(1);
+                      } catch (e) {
+                        console.error('Filter error:', e);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    onReset={() => fetchMovies('all', 0)}
+                  />
+                </div>
+              )}
+
               {/* Sana Özel Öneriler Bloğu */}
               <RecommenderBlock
                 watchlist={watchlist}
@@ -362,6 +434,39 @@ function App() {
       {user && user.hasCompletedOnboarding === false && showOnboarding && (
         <OnboardingModal onComplete={() => setShowOnboarding(false)} />
       )}
+
+      {/* İnteraktif AI Film Sihirbazı Modalı */}
+      <MovieWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        isInWatchlist={isInWatchlist}
+        isWatched={isWatched}
+        onToggleWatchlist={toggleWatchlist}
+        onToggleWatched={toggleWatched}
+        onMovieClick={setSelectedMovie}
+      />
+
+      {/* Niyetle Keşfet Modalı */}
+      <IntentDiscoveryModal
+        isOpen={isIntentOpen}
+        onClose={() => setIsIntentOpen(false)}
+        isInWatchlist={isInWatchlist}
+        isWatched={isWatched}
+        onToggleWatchlist={toggleWatchlist}
+        onToggleWatched={toggleWatched}
+        onMovieClick={setSelectedMovie}
+      />
+
+      {/* Ruh Hali Keşfi Modalı */}
+      <MoodSelectorModal
+        isOpen={isMoodModalOpen}
+        onClose={() => setIsMoodModalOpen(false)}
+        isInWatchlist={isInWatchlist}
+        isWatched={isWatched}
+        onToggleWatchlist={toggleWatchlist}
+        onToggleWatched={toggleWatched}
+        onMovieClick={setSelectedMovie}
+      />
     </div>
   );
 }

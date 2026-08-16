@@ -44,8 +44,11 @@ export const fetchMovieInsight = async (movieData) => {
   return {
     atmosphere: fallback.vibe,
     narrativePace: fallback.pace,
-    keyThemes: ['Varoluşçuluk', 'Zaman Algısı', 'İnsan Doğası'],
+    keyThemes: fallback.keyThemes || ['Karakter Gelişimi', 'Sinematik Kurgu'],
     whyToWatch: fallback.insight,
-    source: 'Pure JavaScript Engine',
+    targetAudience: fallback.targetAudience,
+    notForAudience: fallback.notForAudience,
+    quickHook: fallback.quickHook,
+    source: 'CinePick Akıllı Anlatı Motoru',
   };
 };
