@@ -59,6 +59,17 @@ public class CatalogIngestionService {
         return CompletableFuture.runAsync(this::bulkImport15kMovies);
     }
 
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void autoSeedIfEmpty() {
+        long count = movieRepository.count();
+        if (count == 0) {
+            log.info("📢 Veritabanı boş tespit edildi (0 film). Arka planda 5.000 film kataloğu çekimi otomatik başlatılıyor...");
+            triggerBulkImport5kAsync();
+        } else {
+            log.info("Veritabanında halihazırda {} film mevcut.", count);
+        }
+    }
+
     public Map<String, Object> bulkImport15kMovies() {
         log.info("🚀 Starting 15.000+ Real Movies TMDB Ingestion Engine across all categories...");
         long startTime = System.currentTimeMillis();

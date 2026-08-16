@@ -25,21 +25,13 @@ public class CatalogIngestionController {
         ));
     }
 
-    @PostMapping("/bulk-import-5k")
-    public ResponseEntity<Map<String, String>> triggerBulkImport5k() {
+    @org.springframework.web.bind.annotation.GetMapping({"/bulk-import-5k", "/bulk-import-15k"})
+    @PostMapping({"/bulk-import-5k", "/bulk-import-15k"})
+    public ResponseEntity<Map<String, String>> triggerBulkImport() {
         catalogIngestionService.triggerBulkImport15kAsync();
         return ResponseEntity.ok(Map.of(
                 "status", "started",
-                "message", "15.000+ film toplu içe aktarım ve Türkiye yayın sağlayıcıları çekim işlemi arka planda başlatıldı."
-        ));
-    }
-
-    @PostMapping("/bulk-import-15k")
-    public ResponseEntity<Map<String, String>> triggerBulkImport15k() {
-        catalogIngestionService.triggerBulkImport15kAsync();
-        return ResponseEntity.ok(Map.of(
-                "status", "started",
-                "message", "15.000+ film toplu içe aktarım ve Türkiye yayın sağlayıcıları çekim işlemi arka planda başlatıldı."
+                "message", "5.000+ film toplu içe aktarım ve Türkiye yayın sağlayıcıları çekim işlemi arka planda başlatıldı."
         ));
     }
 }
