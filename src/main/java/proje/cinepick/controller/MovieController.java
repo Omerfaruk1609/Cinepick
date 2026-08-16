@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proje.cinepick.dto.MovieDto;
 import proje.cinepick.dto.SearchResultDto;
+import proje.cinepick.entity.Movie;
 import proje.cinepick.service.MovieSearchService;
 
 import java.util.List;
@@ -18,6 +19,49 @@ public class MovieController {
     private final proje.cinepick.service.SmartSummaryService smartSummaryService;
     private final proje.cinepick.repository.MovieRepository movieRepository;
     private final MovieSearchService movieSearchService;
+    private final proje.cinepick.service.PersonalizedRecommendationService personalizedRecommendationService;
+    private final proje.cinepick.service.IntentDiscoveryService intentDiscoveryService;
+    private final proje.cinepick.service.MoodRecommendationService moodRecommendationService;
+    private final proje.cinepick.service.MovieWizardService movieWizardService;
+
+    @GetMapping("/popular")
+    public ResponseEntity<List<MovieDto>> getPopularMovies(
+            @RequestParam(required = false, defaultValue = "5200") int limit,
+            @RequestParam(required = false, defaultValue = "0") int page) {
+        int safeLimit = Math.min(Math.max(limit, 1), 6000);
+        List<Movie> popular = movieRepository.filterMovies(null, null, null, null, null, null, null, null, safeLimit, page * safeLimit);
+        List<MovieDto> dtos = popular.stream().map(MovieDto::fromEntity).toList();
+        return ResponseEntity.ok(dtos);
+    }
+
+    @PostMapping("/filter")
+    public ResponseEntity<List<MovieDto>> filterMovies(
+            @RequestParam(required = false) Long userId,
+            @RequestBody(required = false) proje.cinepick.dto.MovieFilterRequest filterRequest) {
+        List<MovieDto> results = personalizedRecommendationService.filterMovies(userId, filterRequest);
+        return ResponseEntity.ok(results);
+    }
+
+    @PostMapping("/wizard-discovery")
+    public ResponseEntity<List<MovieDto>> discoverByWizard(
+            @RequestBody(required = false) proje.cinepick.dto.MovieWizardRequest request) {
+        List<MovieDto> results = movieWizardService.discoverByWizard(request);
+        return ResponseEntity.ok(results);
+    }
+
+    @PostMapping("/intent-discovery")
+    public ResponseEntity<List<MovieDto>> discoverByIntent(
+            @RequestBody proje.cinepick.dto.IntentDiscoveryRequest request) {
+        List<MovieDto> results = intentDiscoveryService.discoverByIntent(request);
+        return ResponseEntity.ok(results);
+    }
+
+    @PostMapping("/mood-recommendation")
+    public ResponseEntity<List<MovieDto>> recommendByMood(
+            @RequestBody(required = false) proje.cinepick.dto.MoodRequest request) {
+        List<MovieDto> results = moodRecommendationService.recommendByMood(request);
+        return ResponseEntity.ok(results);
+    }
 
     /**
      * Unified movie search endpoint.
