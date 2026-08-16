@@ -20,6 +20,13 @@ public class MovieDto {
     private String[] genres;
     private Integer matchPercentage;
     private String recommendationReason;
+    private String originalLanguage;
+    private Integer runtime;
+    private String country;
+    private Integer releaseYear;
+    private String streamingPlatforms;
+    private Long voteCount;
+    private String director;
 
     public static MovieDto fromEntity(proje.cinepick.entity.Movie movie) {
         if (movie == null) return null;
@@ -29,9 +36,16 @@ public class MovieDto {
                 .title(movie.getTitle())
                 .overview(movie.getOverview())
                 .posterPath(movie.getPosterPath())
-                .releaseDate(movie.getReleaseDate())
+                .releaseDate(movie.getReleaseDate() != null ? movie.getReleaseDate().toString() : null)
                 .voteAverage(movie.getVoteAverage())
+                .voteCount(movie.getVoteCount())
                 .genres(movie.getGenres())
+                .originalLanguage(movie.getOriginalLanguage())
+                .runtime(movie.getRuntime())
+                .country(movie.getCountry())
+                .director(movie.getDirector())
+                .releaseYear(movie.getReleaseYear())
+                .streamingPlatforms(movie.getStreamingPlatforms())
                 .build();
     }
 }

@@ -31,14 +31,14 @@ public class Movie {
     private String posterPath;
 
     @Column(name = "release_date")
-    private String releaseDate;
+    private java.time.LocalDate releaseDate;
 
     @Column(name = "vote_average")
     private Double voteAverage;
 
     @Convert(converter = proje.cinepick.entity.converter.VectorConverter.class)
     @org.hibernate.annotations.ColumnTransformer(read = "embedding::text", write = "CAST(? AS vector)")
-    @Column(name = "embedding", columnDefinition = "vector(1536)")
+    @Column(name = "embedding", columnDefinition = "vector(384)")
     private float[] embedding;
 
 
@@ -52,4 +52,20 @@ public class Movie {
 
     @Column(name = "vote_count")
     private Long voteCount;
+
+    @Column(name = "original_language", length = 10)
+    private String originalLanguage;
+
+    @Column(name = "runtime")
+    private Integer runtime;
+
+    @Column(name = "country", length = 100)
+    private String country;
+
+    @Column(name = "release_year")
+    private Integer releaseYear;
+
+    @Column(name = "streaming_platforms", length = 500)
+    private String streamingPlatforms;
 }
+
