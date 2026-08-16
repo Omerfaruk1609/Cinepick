@@ -49,6 +49,7 @@ spring:
 
   flyway:
     enabled: true
+    validate-on-migrate: false
     baseline-on-migrate: true # Mevcut veritabanı varsa baseline oluşturur
     locations: classpath:db/migration
 
