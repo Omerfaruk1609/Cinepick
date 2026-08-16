@@ -29,7 +29,10 @@ public class MovieController {
             @RequestParam(required = false, defaultValue = "5200") int limit,
             @RequestParam(required = false, defaultValue = "0") int page) {
         int safeLimit = Math.min(Math.max(limit, 1), 6000);
-        List<Movie> popular = movieRepository.filterMovies(null, null, null, null, null, null, null, null, safeLimit, page * safeLimit);
+        List<Movie> popular = movieRepository.findPopularMovies(safeLimit);
+        if (popular == null || popular.isEmpty()) {
+            popular = movieRepository.findAll();
+        }
         List<MovieDto> dtos = popular.stream().map(MovieDto::fromEntity).toList();
         return ResponseEntity.ok(dtos);
     }
