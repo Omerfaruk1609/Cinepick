@@ -119,11 +119,8 @@ public class CatalogIngestionService {
                 }
 
                 try {
-                    String separator = endpointTemplate.contains("?") ? "&" : "?";
-                    String url = String.format("%s%s%sapi_key=%s",
-                            tmdbApiUrl, String.format(endpointTemplate, page), separator, tmdbApiKey);
-
-                    TmdbPageResponse response = restTemplate.getForObject(url, TmdbPageResponse.class);
+                    String endpoint = String.format(endpointTemplate, page);
+                    TmdbPageResponse response = executeTmdbGet(endpoint, TmdbPageResponse.class);
 
                     if (response != null && response.getResults() != null) {
                         for (TmdbPageResponse.TmdbItem item : response.getResults()) {
@@ -244,8 +241,7 @@ public class CatalogIngestionService {
 
     private String fetchEnglishOverviewFallback(Long tmdbId) {
         try {
-            String url = String.format("%s/movie/%d?api_key=%s&language=en-US", tmdbApiUrl, tmdbId, tmdbApiKey);
-            TmdbPageResponse.TmdbItem detail = restTemplate.getForObject(url, TmdbPageResponse.TmdbItem.class);
+            TmdbPageResponse.TmdbItem detail = executeTmdbGet(String.format("/movie/%d?language=en-US", tmdbId), TmdbPageResponse.TmdbItem.class);
             if (detail != null && detail.getOverview() != null && !detail.getOverview().isBlank()) {
                 return detail.getOverview();
             }
@@ -255,8 +251,7 @@ public class CatalogIngestionService {
 
     private String fetchTurkeyStreamingPlatforms(Long tmdbId) {
         try {
-            String url = String.format("%s/movie/%d/watch/providers?api_key=%s", tmdbApiUrl, tmdbId, tmdbApiKey);
-            TmdbWatchProviderResponse response = restTemplate.getForObject(url, TmdbWatchProviderResponse.class);
+            TmdbWatchProviderResponse response = executeTmdbGet(String.format("/movie/%d/watch/providers", tmdbId), TmdbWatchProviderResponse.class);
 
             if (response != null && response.getResults() != null && response.getResults().containsKey("TR")) {
                 TmdbWatchProviderResponse.CountryProviders tr = response.getResults().get("TR");
@@ -270,6 +265,39 @@ public class CatalogIngestionService {
             }
         } catch (Exception ignored) {}
         return null;
+    }
+
+    public <T> T executeTmdbGet(String endpointPath, Class<T> responseType) {
+        if (tmdbApiKey == null || tmdbApiKey.isBlank() || tmdbApiKey.equals("dummy_key") || tmdbApiKey.equals("your_tmdb_api_key_here")) {
+            return null;
+        }
+
+        try {
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("Accept", "application/json");
+            headers.set("User-Agent", "CinePick/2.0");
+
+            String fullUrl;
+            if (tmdbApiKey.startsWith("eyJ") || tmdbApiKey.length() > 45) {
+                headers.setBearerAuth(tmdbApiKey.trim());
+                fullUrl = tmdbApiUrl + endpointPath;
+            } else {
+                String separator = endpointPath.contains("?") ? "&" : "?";
+                fullUrl = String.format("%s%s%sapi_key=%s", tmdbApiUrl, endpointPath, separator, tmdbApiKey.trim());
+            }
+
+            org.springframework.http.HttpEntity<?> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.ResponseEntity<T> response = restTemplate.exchange(
+                    fullUrl,
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    responseType
+            );
+            return response.getBody();
+        } catch (Exception e) {
+            log.warn("TMDB API request failed for path '{}': {}", endpointPath, e.getMessage());
+            return null;
+        }
     }
 
     public String cleanTitle(String title) {

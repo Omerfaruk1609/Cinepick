@@ -29,9 +29,8 @@ public class ResilientTmdbService {
     @CircuitBreaker(name = "tmdbApi", fallbackMethod = "getMovieFallback")
     @RateLimiter(name = "tmdbApi", fallbackMethod = "getMovieFallback")
     public TmdbMovieDto getMovieDetails(Long tmdbId) {
-        String url = String.format("%s/movie/%d?api_key=%s", tmdbApiUrl, tmdbId, tmdbApiKey);
         log.info("Fetching movie details from TMDB API for ID: {}", tmdbId);
-        return restTemplate.getForObject(url, TmdbMovieDto.class);
+        return executeTmdbGet(String.format("/movie/%d", tmdbId), TmdbMovieDto.class);
     }
 
     public TmdbMovieDto getMovieFallback(Long tmdbId, Throwable throwable) {
@@ -50,12 +49,9 @@ public class ResilientTmdbService {
 
     @Cacheable(value = "tmdb_providers", key = "#tmdbMovieId", unless = "#result == null")
     public proje.cinepick.dto.tmdb.TmdbWatchProviderResponse.CountryProviders getTurkeyWatchProviders(Long tmdbMovieId) {
-        String url = String.format("%s/movie/%d/watch/providers?api_key=%s", 
-                tmdbApiUrl, tmdbMovieId, tmdbApiKey);
-
         try {
-            proje.cinepick.dto.tmdb.TmdbWatchProviderResponse response = 
-                restTemplate.getForObject(url, proje.cinepick.dto.tmdb.TmdbWatchProviderResponse.class);
+            proje.cinepick.dto.tmdb.TmdbWatchProviderResponse response =
+                    executeTmdbGet(String.format("/movie/%d/watch/providers", tmdbMovieId), proje.cinepick.dto.tmdb.TmdbWatchProviderResponse.class);
             if (response != null && response.getResults() != null) {
                 return response.getResults().get("TR");
             }
@@ -63,5 +59,38 @@ public class ResilientTmdbService {
             log.error("TMDB Watch Providers çekilemedi. Movie ID: {}", tmdbMovieId, e);
         }
         return null;
+    }
+
+    public <T> T executeTmdbGet(String endpointPath, Class<T> responseType) {
+        if (tmdbApiKey == null || tmdbApiKey.isBlank() || tmdbApiKey.equals("dummy_key") || tmdbApiKey.equals("your_tmdb_api_key_here")) {
+            return null;
+        }
+
+        try {
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("Accept", "application/json");
+            headers.set("User-Agent", "CinePick/2.0");
+
+            String fullUrl;
+            if (tmdbApiKey.startsWith("eyJ") || tmdbApiKey.length() > 45) {
+                headers.setBearerAuth(tmdbApiKey.trim());
+                fullUrl = tmdbApiUrl + endpointPath;
+            } else {
+                String separator = endpointPath.contains("?") ? "&" : "?";
+                fullUrl = String.format("%s%s%sapi_key=%s", tmdbApiUrl, endpointPath, separator, tmdbApiKey.trim());
+            }
+
+            org.springframework.http.HttpEntity<?> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.ResponseEntity<T> response = restTemplate.exchange(
+                    fullUrl,
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    responseType
+            );
+            return response.getBody();
+        } catch (Exception e) {
+            log.warn("TMDB request failed for path '{}': {}", endpointPath, e.getMessage());
+            return null;
+        }
     }
 }
