@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 public class MovieCatalogGenerator {
 
-    private static final String API_KEY = "0c69ab87a9e59b9ae3fe3d327e651b69";
+    private static final String API_KEY = System.getenv().getOrDefault("TMDB_API_KEY", "");
     private static final String BASE_URL = "https://api.themoviedb.org/3";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 

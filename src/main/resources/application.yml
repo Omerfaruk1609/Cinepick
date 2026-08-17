@@ -67,6 +67,6 @@ resilience4j:
 
 tmdb:
   api:
-    key: ${TMDB_API_KEY:0c69ab87a9e59b9ae3fe3d327e651b69}
+    key: ${TMDB_API_KEY:}
     url: https://api.themoviedb.org/3
 
