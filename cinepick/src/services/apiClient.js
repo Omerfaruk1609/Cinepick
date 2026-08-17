@@ -7,7 +7,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 60000, // Render Free Tier cold-boot (uyku modundan uyanma) için 60 saniye tolerans
 });
 
 apiClient.interceptors.request.use(
@@ -25,7 +25,8 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config;
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       // Sadece korumalı auth gerektiren sayfalarda token temizle
       const token = localStorage.getItem('token');
@@ -33,7 +34,20 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
+      return Promise.reject(error);
     }
+
+    // Sunucu uyku modundaysa (Spin down) veya network gecikmesi varsa 2 kez otomatik yeniden dene
+    if (!config || !config.retryCount) {
+      config.retryCount = 0;
+    }
+
+    if (config.retryCount < 2 && (!error.response || error.code === 'ECONNABORTED' || error.response.status >= 500)) {
+      config.retryCount += 1;
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      return apiClient(config);
+    }
+
     return Promise.reject(error);
   }
 );

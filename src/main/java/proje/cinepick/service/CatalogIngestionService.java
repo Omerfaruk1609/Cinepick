@@ -349,4 +349,8 @@ public class CatalogIngestionService {
         }
         log.info("Cleaned {} movie titles in database.", cleanedCount);
     }
+
+    public long getMovieCount() {
+        return movieRepository.count();
+    }
 }
