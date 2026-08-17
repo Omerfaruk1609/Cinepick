@@ -155,6 +155,7 @@ public class MovieCatalogGenerator {
                                         }
 
                                         String sql = String.format(
+                                                Locale.US,
                                                 "INSERT INTO movies (tmdb_id, title, overview, poster_path, release_date, release_year, vote_average, vote_count, genres, original_language, streaming_platforms) " +
                                                         "VALUES (%d, '%s', '%s', %s, %s, %s, %.2f, %d, %s, '%s', '%s') ON CONFLICT (tmdb_id) DO NOTHING;",
                                                 id,
