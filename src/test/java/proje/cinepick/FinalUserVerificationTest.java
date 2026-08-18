@@ -94,13 +94,8 @@ public class FinalUserVerificationTest {
 
     @Test
     void endToEnd_IntentDiscovery_GeneratesEmbeddingAndReturnsMatches() {
-        float[] fakePromptVector = new float[384];
-        fakePromptVector[0] = 0.5f;
-
-        when(localEmbeddingService.generateEmbedding("90'lar nostalji filmi")).thenReturn(fakePromptVector);
-
         Movie m1 = Movie.builder().id(100L).tmdbId(500L).title("Pulp Fiction").voteAverage(8.9).releaseYear(1994).build();
-        when(movieRepository.filterMovies(anyString(), any(), any(), any(), any(), any(), any(), any(), eq(10), eq(0)))
+        when(movieRepository.filterMovies(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
                 .thenReturn(List.of(m1));
 
         IntentDiscoveryRequest request = IntentDiscoveryRequest.builder()
